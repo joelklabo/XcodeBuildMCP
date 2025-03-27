@@ -6,6 +6,13 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 
 This project implements an MCP server that exposes Xcode operations as tools that can be invoked by MCP clients. It allows AI assistants or other tools to interact with Xcode projects programmatically through a standardised interface.
 
+## Why?
+
+The XcodeBuild MCP tool exists to streamline and standardise the interaction between AI assistants and Xcode projects. By providing a set of dedicated tools that expose common Xcode operations, it eliminates the reliance on potentially outdated or incorrect command-line invocations. 
+
+This ensures a more reliable and efficient development process, enabling MCP clients to leverage the full capabilities of Xcode seamlessly and without the risk of configuration errors. 
+
+
 ## Features
 
 The XcodeBuildMCP server provides the following tools:
