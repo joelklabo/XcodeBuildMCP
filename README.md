@@ -1,4 +1,4 @@
-# XcodeBuild MCP
+<img src="banner.png" alt="XcodeBuild MCP" width="600"/>
 
 A Model Context Protocol (MCP) server that provides Xcode-related tools for integration with AI assistants and other MCP clients.
 
