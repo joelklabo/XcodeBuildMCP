@@ -20,30 +20,20 @@ Critically, this MCP enables AI agents to independently validate code changes by
 
 ## Features
 
-The XcodeBuildMCP server provides the following tools:
+The XcodeBuildMCP server provides the following tool capabilities:
 
-### Build tools
-- **build**: Builds the project using xcodebuild with support for workspaces, projects, schemes, and various platforms (iOS, macOS, watchOS, tvOS, visionOS and their simulator variants).
-- **showBuildSettings**: Shows build settings for the project using xcodebuild.
-- **getAppPath**: Extracts the app bundle path from build settings, making it easier to find the built app for installation or launching.
-- **listSchemes**: Lists all available schemes in an Xcode project or workspace.
-- **clean**: Cleans build products using xcodebuild's native clean action.
+### Xcode project management
+- **Build Operations**: Platform-specific build tools for macOS, iOS simulator, and iOS device targets
+- **Project Information**: Tools to list schemes and show build settings for Xcode projects and workspaces
+- **Clean Operations**: Clean build products using xcodebuild's native clean action
 
-### Simulator tools
-- **listSimulators**: Lists available iOS simulators with their UUIDs.
-- **bootSimulator**: Boots an iOS simulator using a specified UUID.
-- **openSimulator**: Opens the iOS Simulator app to view the simulator UI.
-- **installAppInSimulator**: Installs an app in an iOS simulator.
-- **launchAppInSimulator**: Launches an app in an iOS simulator using its bundle ID.
+### Simulator management
+- **Simulator Control**: List, boot, and open iOS simulators 
+- **App Deployment**: Install and launch apps on iOS simulators
 
-### macOS tools
-
-- **launchMacOSApp**: Launches a macOS app using the open command.
-
-### Bundle ID tools
-- **getBundleId**: Extracts the bundle identifier from an app bundle (.app).
-- **getiOSBundleId**: Extracts the bundle identifier from an iOS app bundle.
-- **getMacOSBundleId**: Extracts the bundle identifier from a macOS app bundle.
+### App utilities
+- **Bundle ID Extraction**: Extract bundle identifiers from iOS and macOS app bundles
+- **App Launching**: Launch built applications on both simulators and macOS
 
 ## Getting started
 
