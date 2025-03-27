@@ -6,12 +6,15 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 
 This project implements an MCP server that exposes Xcode operations as tools that can be invoked by MCP clients. It allows AI assistants or other tools to interact with Xcode projects programmatically through a standardised interface.
 
+
+https://github.com/user-attachments/assets/2da9d49c-b1d6-47c1-9f1e-ffdf71d8a09a
+<caption>Demo showing Claude Code building and launching a macOS app.</caption>
+
 ## Why?
 
 The XcodeBuild MCP tool exists to streamline and standardise the interaction between AI assistants and Xcode projects. By providing a set of dedicated tools that expose common Xcode operations, it eliminates the reliance on potentially outdated or incorrect command-line invocations. 
 
 This ensures a more reliable and efficient development process, enabling MCP clients to leverage the full capabilities of Xcode seamlessly and without the risk of configuration errors. 
-
 
 ## Features
 
@@ -91,6 +94,16 @@ You can use MCP Inspector via:
 ```bash
 npx @modelcontextprotocol/inspector node build/index.js
 ```
+
+## Demos
+
+### Building and running iOS app in Cursor
+https://github.com/user-attachments/assets/b9d334b5-7f28-47fc-9d66-28061bc701b4
+
+
+### Building and running iOS app in Claude Code
+https://github.com/user-attachments/assets/e3c08d75-8be6-4857-b4d0-9350b26ef086
+
 
 ## Licence
 
