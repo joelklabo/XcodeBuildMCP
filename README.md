@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 
 ## Overview
 
-This project implements an MCP server that exposes Xcode operations as tools that can be invoked by MCP clients. It allows AI assistants or other tools to interact with Xcode projects programmatically through a standardised interface.
+This project implements an MCP server that exposes Xcode operations as tools that can be invoked by AI agents via the MCP protocol. It enables programmatic interaction with Xcode projects through a standardised interface, optimised for agent-driven development workflows.
 
 
 https://github.com/user-attachments/assets/2da9d49c-b1d6-47c1-9f1e-ffdf71d8a09a
@@ -12,9 +12,11 @@ https://github.com/user-attachments/assets/2da9d49c-b1d6-47c1-9f1e-ffdf71d8a09a
 
 ## Why?
 
-The XcodeBuild MCP tool exists to streamline and standardise the interaction between AI assistants and Xcode projects. By providing a set of dedicated tools that expose common Xcode operations, it eliminates the reliance on potentially outdated or incorrect command-line invocations. 
+The XcodeBuild MCP tool exists primarily to streamline and standardise interaction between AI agents and Xcode projects. By providing dedicated tools for common Xcode operations, it removes reliance on manual or potentially incorrect command-line invocations.
 
-This ensures a more reliable and efficient development process, enabling MCP clients to leverage the full capabilities of Xcode seamlessly and without the risk of configuration errors. 
+This ensures a reliable and efficient development process, allowing agents to seamlessly leverage Xcode's capabilities while reducing the risk of configuration errors.
+
+Critically, this MCP enables AI agents to independently validate code changes by building projects, inspecting errors, and iterating autonomously. In contrast to user-driven tools like Sweetpad, XcodeBuild MCP empowers agents to automate these workflows effectively.
 
 ## Features
 
