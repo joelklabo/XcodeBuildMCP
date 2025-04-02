@@ -63,7 +63,8 @@ The XcodeBuildMCP server provides the following tool capabilities:
 - Node.js (v16 or later)
 - npm
 
-> !NOTE: If you are using mise, you can skip the Node.js and npm installation steps.
+> [!NOTE]
+> If you are using mise, you can skip the Node.js and npm installation steps.
 
 ### One-line setup with mise x
 
