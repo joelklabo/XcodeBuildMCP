@@ -2,6 +2,21 @@
 
 A Model Context Protocol (MCP) server that provides Xcode-related tools for integration with AI assistants and other MCP clients.
 
+## Table of contents
+
+- [Overview](#overview)
+- [Why?](#why)
+- [Features](#features)
+- [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [One-line setup with mise x](#one-line-setup-with-mise-x)
+  - [Configure MCP clients](#configure-mcp-clients)
+- [Demos](#demos)
+- [Local development setup](#local-development-setup)
+- [Debugging](#debugging)
+- [Licence](#licence)
+
+
 ## Overview
 
 This project implements an MCP server that exposes Xcode operations as tools that can be invoked by AI agents via the MCP protocol. It enables programmatic interaction with Xcode projects through a standardised interface, optimised for agent-driven development workflows.
@@ -35,7 +50,78 @@ The XcodeBuildMCP server provides the following tool capabilities:
 - **Bundle ID Extraction**: Extract bundle identifiers from iOS and macOS app bundles
 - **App Launching**: Launch built applications on both simulators and macOS
 
+
 ## Getting started
+
+### Prerequisites
+
+- Xcode command-line tools
+- Node.js (v16 or later)
+- npm
+
+> !NOTE: If you are using mise, you can skip the Node.js and npm installation steps.
+
+### Installation
+
+The easiest way to get started is to use `mise`.
+
+To install mise:
+```bash
+# macOS (Homebrew)
+brew install mise
+
+# Other installation methods
+# See https://mise.jdx.dev/getting-started.html
+```
+
+For more information about mise, visit the [official documentation](https://mise.jdx.dev/).
+
+### Configure MCP clients
+
+Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the XcodeBuildMCP server by adding the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "XcodeBuildMCP": {
+      "command": "mise",
+      "args": [
+        "x",
+        "npm:xcodebuildmcp@latest",
+        "--",
+        "xcodebuildmcp"
+      ]
+    }
+  }
+}
+```
+
+Or, if you have an existing Node.js environment, you can use npx instead of mise:
+
+```json
+{
+  "mcpServers": {
+    "XcodeBuildMCP": {
+      "command": "npx",
+      "args": [
+        "xcodebuildmcp"
+      ]
+    }
+  }
+}
+```
+
+## Demos
+
+### Building and running iOS app in Cursor
+https://github.com/user-attachments/assets/b9d334b5-7f28-47fc-9d66-28061bc701b4
+
+
+### Building and running iOS app in Claude Code
+https://github.com/user-attachments/assets/e3c08d75-8be6-4857-b4d0-9350b26ef086
+
+
+## Local development setup
 
 ### Prerequisites
 
@@ -54,48 +140,18 @@ The XcodeBuildMCP server provides the following tool capabilities:
    ```
    npm run build
    ```
-4. Optionally start the server:
+4. Start the server:
    ```
    node build/index.js
    ```
 
-> [!NOTE]
-> You don't need to run the server manually as MCP clients will do this for you.
-
-## Adding to Windsurf/Cursor/Clude Desktop etc.
-
-Create a new custom server configuration and add the following; changing the path to the actual path you cloned the repo to.
-
-```json
-{
-  "mcpServers": {
-    "XcodeBuildMCP": {
-      "command": "node",
-      "args": [
-        "/path_to/XcodeBuildMCP/build/index.js"
-      ]
-    }
-  }
-}
-```
-
-## Debugging
+### Debugging
 
 You can use MCP Inspector via:
 
 ```bash
 npx @modelcontextprotocol/inspector node build/index.js
-```
-
-## Demos
-
-### Building and running iOS app in Cursor
-https://github.com/user-attachments/assets/b9d334b5-7f28-47fc-9d66-28061bc701b4
-
-
-### Building and running iOS app in Claude Code
-https://github.com/user-attachments/assets/e3c08d75-8be6-4857-b4d0-9350b26ef086
-
+```   
 
 ## Licence
 

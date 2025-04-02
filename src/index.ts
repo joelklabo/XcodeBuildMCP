@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * XcodeBuildMCP - Main entry point
  * This file imports and configures the MCP server and tools
