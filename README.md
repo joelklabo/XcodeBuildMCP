@@ -12,8 +12,12 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
   - [One-line setup with mise x](#one-line-setup-with-mise-x)
   - [Configure MCP clients](#configure-mcp-clients)
 - [Demos](#demos)
+  - [Building and running iOS app in Cursor](#building-and-running-ios-app-in-cursor)
+  - [Building and running iOS app in Claude Code](#building-and-running-ios-app-in-claude-code)
 - [Local development setup](#local-development-setup)
-- [Debugging](#debugging)
+  - [Prerequisites](#prerequisites-1)
+  - [Installation](#installation)
+  - [Debugging](#debugging)
 - [Licence](#licence)
 
 
@@ -61,9 +65,7 @@ The XcodeBuildMCP server provides the following tool capabilities:
 
 > !NOTE: If you are using mise, you can skip the Node.js and npm installation steps.
 
-### Installation
-
-The easiest way to get started is to use `mise`.
+### One-line setup with mise x
 
 To install mise:
 ```bash
