@@ -148,6 +148,30 @@ https://github.com/user-attachments/assets/e3c08d75-8be6-4857-b4d0-9350b26ef086
    node build/index.js
    ```
 
+### Configure your MCP client
+
+To configure your MCP client to use the local XcodeBuildMCP server, add the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "XcodeBuildMCP": {
+      "command": "node",
+      "args": [
+        "/path_to/XcodeBuildMCP/build/index.js"
+      ]
+    }
+  }
+}
+```
+
+Remember after making changes to the server implemetation you'll need to rebuild and restart the server.
+
+```bash
+npm run build
+node build/index.js
+```
+
 ### Debugging
 
 You can use MCP Inspector via:

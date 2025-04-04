@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { log } from '../utils/logger.js';
+import { version } from '../version.js';
 
 /**
  * Create and configure the MCP server
@@ -11,7 +12,7 @@ export function createServer(): McpServer {
   const server = new McpServer(
     {
       name: 'xcodebuildmcp',
-      version: '1.0.0',
+      version,
     },
     {
       capabilities: {
@@ -24,7 +25,7 @@ export function createServer(): McpServer {
   );
 
   // Log server initialization
-  log('info', 'Server initialized');
+  log('info', `Server initialized (version ${version})`);
 
   return server;
 }
