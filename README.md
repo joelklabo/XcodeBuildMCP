@@ -17,6 +17,7 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 - [Local development setup](#local-development-setup)
   - [Prerequisites](#prerequisites-1)
   - [Installation](#installation)
+  - [Configure your MCP client](#configure-your-mcp-client)
   - [Debugging](#debugging)
 - [Licence](#licence)
 
