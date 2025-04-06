@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolResponse, XcodePlatform } from '../types/common.js';
+import { ToolResponse, ToolResponseContent, XcodePlatform } from '../types/common.js';
 
 /**
  * Common parameter schemas used across multiple tools
@@ -143,4 +143,11 @@ export function registerTool<T extends object>(
   };
 
   server.tool(name, description, schema, wrappedHandler);
+}
+
+/**
+ * Helper to create a standard text response content.
+ */
+export function createTextContent(text: string): ToolResponseContent {
+  return { type: 'text', text };
 }

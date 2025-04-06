@@ -6,7 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse, XcodePlatform } from '../types/common.js';
-import { executeXcodeBuild } from '../utils/build-utils.js';
+import { executeXcodeCommand } from '../utils/xcode.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -41,41 +41,69 @@ async function _handleGetAppPathLogic(params: {
   log('info', `Getting app path for scheme ${params.scheme} on platform ${params.platform}`);
 
   try {
-    // Use executeXcodeBuild with 'showBuildSettings' action for consistent error handling
-    const result = await executeXcodeBuild(
-      {
-        ...params,
-      },
-      {
-        platform: params.platform,
-        simulatorName: params.simulatorName,
-        simulatorId: params.simulatorId,
-        useLatestOS: params.useLatestOS,
-        logPrefix: 'Get App Path',
-      },
-      'showBuildSettings',
-    );
+    // Create the command array for xcodebuild with -showBuildSettings option
+    const command = ['xcodebuild', '-showBuildSettings'];
 
-    // If executeXcodeBuild returned an error, just return it
-    if (result.isError) {
-      return result;
+    // Add the workspace or project
+    if (params.workspacePath) {
+      command.push('-workspace', params.workspacePath);
+    } else if (params.projectPath) {
+      command.push('-project', params.projectPath);
     }
 
-    // Extract the build settings output from the result
-    let buildSettingsOutput = '';
-    if (result.content) {
-      for (const item of result.content) {
-        if (item.type === 'text' && !item.text.includes('✅') && !item.text.includes('⚠️')) {
-          buildSettingsOutput = item.text;
-          break;
-        }
+    // Add the scheme and configuration
+    command.push('-scheme', params.scheme);
+    command.push('-configuration', params.configuration);
+
+    // Handle destination based on platform
+    const isSimulatorPlatform = [
+      XcodePlatform.iOSSimulator,
+      XcodePlatform.watchOSSimulator,
+      XcodePlatform.tvOSSimulator,
+      XcodePlatform.visionOSSimulator,
+    ].includes(params.platform);
+
+    let destinationString = '';
+
+    if (isSimulatorPlatform) {
+      if (params.simulatorId) {
+        destinationString = `platform=${params.platform},id=${params.simulatorId}`;
+      } else if (params.simulatorName) {
+        destinationString = `platform=${params.platform},name=${params.simulatorName}${params.useLatestOS ? ',OS=latest' : ''}`;
+      } else {
+        return createTextResponse(
+          `For ${params.platform} platform, either simulatorId or simulatorName must be provided`,
+          true,
+        );
       }
+    } else if (params.platform === XcodePlatform.macOS) {
+      destinationString = 'platform=macOS,arch=arm64,arch=x86_64';
+    } else if (params.platform === XcodePlatform.iOS) {
+      destinationString = 'generic/platform=iOS';
+    } else if (params.platform === XcodePlatform.watchOS) {
+      destinationString = 'generic/platform=watchOS';
+    } else if (params.platform === XcodePlatform.tvOS) {
+      destinationString = 'generic/platform=tvOS';
+    } else if (params.platform === XcodePlatform.visionOS) {
+      destinationString = 'generic/platform=visionOS';
+    } else {
+      return createTextResponse(`Unsupported platform: ${params.platform}`, true);
     }
 
-    if (!buildSettingsOutput) {
+    command.push('-destination', destinationString);
+
+    // Execute the command directly
+    const result = await executeXcodeCommand(command, 'Get App Path');
+
+    if (!result.success) {
+      return createTextResponse(`Failed to get app path: ${result.error}`, true);
+    }
+
+    if (!result.output) {
       return createTextResponse('Failed to extract build settings output from the result.', true);
     }
 
+    const buildSettingsOutput = result.output;
     const builtProductsDirMatch = buildSettingsOutput.match(/BUILT_PRODUCTS_DIR = (.+)$/m);
     const fullProductNameMatch = buildSettingsOutput.match(/FULL_PRODUCT_NAME = (.+)$/m);
 

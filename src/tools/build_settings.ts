@@ -6,8 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
 import { executeXcodeCommand } from '../utils/xcode.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
-import { ToolResponse, XcodePlatform } from '../types/common.js';
-import { executeXcodeBuild } from '../utils/build-utils.js';
+import { ToolResponse } from '../types/common.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -30,38 +29,24 @@ async function _handleShowBuildSettingsLogic(params: {
   log('info', `Showing build settings for scheme ${params.scheme}`);
 
   try {
-    // Use executeXcodeBuild with 'showBuildSettings' action
-    const result = await executeXcodeBuild(
-      {
-        ...params,
-        configuration: 'Debug', // Default configuration
-      },
-      {
-        platform: XcodePlatform.macOS, // Default platform, not important for showBuildSettings
-        logPrefix: 'Show Build Settings',
-      },
-      'showBuildSettings', // Use showBuildSettings action
-    );
+    // Create the command array for xcodebuild
+    const command = ['xcodebuild', '-showBuildSettings']; // -showBuildSettings as an option, not an action
 
-    // If executeXcodeBuild returned an error, just return it
-    if (result.isError) {
-      return result;
+    // Add the workspace or project
+    if (params.workspacePath) {
+      command.push('-workspace', params.workspacePath);
+    } else if (params.projectPath) {
+      command.push('-project', params.projectPath);
     }
 
-    // Otherwise, format the output for display
-    // Extract the output from the first text element that's not a warning
-    let buildSettingsOutput = '';
-    if (result.content) {
-      for (const item of result.content) {
-        if (
-          item.type === 'text' &&
-          !item.text.includes('Warning:') &&
-          !item.text.includes('succeeded')
-        ) {
-          buildSettingsOutput = item.text;
-          break;
-        }
-      }
+    // Add the scheme
+    command.push('-scheme', params.scheme);
+
+    // Execute the command directly
+    const result = await executeXcodeCommand(command, 'Show Build Settings');
+
+    if (!result.success) {
+      return createTextResponse(`Failed to show build settings: ${result.error}`, true);
     }
 
     return {
@@ -72,7 +57,7 @@ async function _handleShowBuildSettingsLogic(params: {
         },
         {
           type: 'text',
-          text: buildSettingsOutput || 'Build settings retrieved successfully.',
+          text: result.output || 'Build settings retrieved successfully.',
         },
       ],
     };

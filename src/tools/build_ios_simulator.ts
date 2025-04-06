@@ -4,7 +4,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
-import { XcodePlatform } from '../utils/xcode.js';
+import { XcodePlatform, executeXcodeCommand } from '../utils/xcode.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import { executeXcodeBuild } from '../utils/build-utils.js';
@@ -80,39 +80,58 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
     }
 
     // --- Get App Path Step ---
-    // Use executeXcodeBuild for more consistent error handling
-    const appPathResult = await executeXcodeBuild(
-      {
-        ...params,
-      },
-      {
-        platform: XcodePlatform.iOSSimulator,
-        simulatorName: params.simulatorName,
-        simulatorId: params.simulatorId,
-        useLatestOS: params.useLatestOS ?? true,
-        logPrefix: 'Get App Path',
-      },
-      'showBuildSettings',
-    );
+    // Create the command array for xcodebuild with -showBuildSettings option
+    const command = ['xcodebuild', '-showBuildSettings'];
 
-    // If there was an error with the command execution, return it
-    if (appPathResult.isError) {
+    // Add the workspace or project
+    if (params.workspacePath) {
+      command.push('-workspace', params.workspacePath);
+    } else if (params.projectPath) {
+      command.push('-project', params.projectPath);
+    }
+
+    // Add the scheme and configuration
+    command.push('-scheme', params.scheme);
+    command.push('-configuration', params.configuration);
+
+    // Handle destination for simulator
+    let destinationString = '';
+    if (params.simulatorId) {
+      destinationString = `platform=iOS Simulator,id=${params.simulatorId}`;
+    } else if (params.simulatorName) {
+      destinationString = `platform=iOS Simulator,name=${params.simulatorName}${params.useLatestOS ? ',OS=latest' : ''}`;
+    } else {
       return createTextResponse(
-        `Build succeeded, but failed to get app path: ${appPathResult.content?.[0]?.text || 'Unknown error'}`,
+        'Either simulatorId or simulatorName must be provided for iOS simulator build',
         true,
       );
     }
 
-    // Extract build settings output
-    let buildSettingsOutput = '';
-    if (appPathResult.content) {
-      for (const item of appPathResult.content) {
-        if (item.type === 'text' && !item.text.includes('✅') && !item.text.includes('⚠️')) {
-          buildSettingsOutput = item.text;
-          break;
-        }
-      }
+    command.push('-destination', destinationString);
+
+    // Add derived data path if provided
+    if (params.derivedDataPath) {
+      command.push('-derivedDataPath', params.derivedDataPath);
     }
+
+    // Add extra args if provided
+    if (params.extraArgs && params.extraArgs.length > 0) {
+      command.push(...params.extraArgs);
+    }
+
+    // Execute the command directly
+    const result = await executeXcodeCommand(command, 'Get App Path');
+
+    // If there was an error with the command execution, return it
+    if (!result.success) {
+      return createTextResponse(
+        `Build succeeded, but failed to get app path: ${result.error || 'Unknown error'}`,
+        true,
+      );
+    }
+
+    // Parse the output to extract the app path
+    const buildSettingsOutput = result.output;
 
     // Extract CODESIGNING_FOLDER_PATH from build settings to get app path
     const appPathMatch = buildSettingsOutput.match(/CODESIGNING_FOLDER_PATH = (.+\.app)/);

@@ -58,6 +58,9 @@ import { registerCleanWorkspaceTool, registerCleanProjectTool } from './tools/cl
 // Import launch tools
 import { registerLaunchMacOSAppTool } from './tools/launch.js';
 
+// Import project/workspace discovery tool
+import { registerDiscoverProjectsTool } from './tools/discover_projects.js';
+
 // Import utilities
 import { log } from './utils/logger.js';
 
@@ -68,6 +71,9 @@ async function main(): Promise<void> {
   try {
     // Create the server
     const server = createServer();
+
+    // Register the project/workspace discovery tool
+    registerDiscoverProjectsTool(server);
 
     // Register List/Discovery tools first
     registerListSchemesWorkspaceTool(server);

@@ -6,7 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { log } from '../utils/logger.js';
-import { XcodePlatform } from '../utils/xcode.js';
+import { XcodePlatform, executeXcodeCommand } from '../utils/xcode.js';
 import { createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import { executeXcodeBuild } from '../utils/build-utils.js';
@@ -56,37 +56,42 @@ async function _getAppPathFromBuildSettings(params: {
   extraArgs?: string[];
 }): Promise<{ success: boolean; appPath?: string; error?: string }> {
   try {
-    // Use executeXcodeBuild with 'showBuildSettings' action for consistent error handling
-    const settingsResult = await executeXcodeBuild(
-      {
-        ...params,
-      },
-      {
-        platform: XcodePlatform.macOS,
-        logPrefix: 'Get Build Settings for Launch',
-      },
-      'showBuildSettings',
-    );
+    // Create the command array for xcodebuild
+    const command = ['xcodebuild', '-showBuildSettings'];
 
-    // Check for errors in execution
-    if (settingsResult.isError) {
+    // Add the workspace or project
+    if (params.workspacePath) {
+      command.push('-workspace', params.workspacePath);
+    } else if (params.projectPath) {
+      command.push('-project', params.projectPath);
+    }
+
+    // Add the scheme and configuration
+    command.push('-scheme', params.scheme);
+    command.push('-configuration', params.configuration);
+
+    // Add derived data path if provided
+    if (params.derivedDataPath) {
+      command.push('-derivedDataPath', params.derivedDataPath);
+    }
+
+    // Add extra args if provided
+    if (params.extraArgs && params.extraArgs.length > 0) {
+      command.push(...params.extraArgs);
+    }
+
+    // Execute the command directly
+    const result = await executeXcodeCommand(command, 'Get Build Settings for Launch');
+
+    if (!result.success) {
       return {
         success: false,
-        error: settingsResult.content?.[0]?.text || 'Failed to get build settings',
+        error: result.error || 'Failed to get build settings',
       };
     }
 
-    // Extract build settings output
-    let buildSettingsOutput = '';
-    if (settingsResult.content) {
-      for (const item of settingsResult.content) {
-        if (item.type === 'text' && !item.text.includes('✅') && !item.text.includes('⚠️')) {
-          buildSettingsOutput = item.text;
-          break;
-        }
-      }
-    }
-
+    // Parse the output to extract the app path
+    const buildSettingsOutput = result.output;
     const builtProductsDirMatch = buildSettingsOutput.match(/BUILT_PRODUCTS_DIR = (.+)$/m);
     const fullProductNameMatch = buildSettingsOutput.match(/FULL_PRODUCT_NAME = (.+)$/m);
 
