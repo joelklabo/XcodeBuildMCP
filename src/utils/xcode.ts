@@ -4,26 +4,12 @@
 
 import { spawn } from 'child_process';
 import { log } from './logger.js';
+import { ToolProgressUpdate, XcodePlatform } from '../types/common.js';
 
 export interface XcodeCommandResponse {
   success: boolean;
   output: string;
   error?: string;
-}
-
-/**
- * Platform options for Xcode builds
- */
-export enum XcodePlatform {
-  macOS = 'macOS',
-  iOS = 'iOS',
-  iOSSimulator = 'iOS Simulator',
-  watchOS = 'watchOS',
-  watchOSSimulator = 'watchOS Simulator',
-  tvOS = 'tvOS',
-  tvOSSimulator = 'tvOS Simulator',
-  visionOS = 'visionOS',
-  visionOSSimulator = 'visionOS Simulator',
 }
 
 /**
@@ -45,7 +31,6 @@ export interface XcodeParams {
 }
 
 import { v4 as uuidv4 } from 'uuid';
-import { ToolProgressUpdate } from '../types/common.js';
 
 /**
  * Function type for progress updates

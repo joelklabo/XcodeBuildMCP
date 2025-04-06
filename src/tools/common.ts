@@ -4,22 +4,7 @@
 
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolResponse } from '../types/common.js';
-
-/**
- * Enum representing Xcode build platforms.
- */
-export enum XcodePlatform {
-  macOS = 'macOS',
-  iOS = 'iOS',
-  watchOS = 'watchOS',
-  tvOS = 'tvOS',
-  visionOS = 'visionOS',
-  iOSSimulator = 'iOS Simulator',
-  watchOSSimulator = 'watchOS Simulator',
-  tvOSSimulator = 'tvOS Simulator',
-  visionOSSimulator = 'visionOS Simulator',
-}
+import { ToolResponse, XcodePlatform } from '../types/common.js';
 
 /**
  * Common parameter schemas used across multiple tools

@@ -4,9 +4,9 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
-import { executeXcodeCommand, XcodePlatform, constructDestinationString } from '../utils/xcode.js';
+import { executeXcodeCommand, constructDestinationString } from '../utils/xcode.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
-import { ToolResponse } from '../types/common.js';
+import { ToolResponse, XcodePlatform } from '../types/common.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -26,7 +26,7 @@ import {
 // --- Private Helper Functions ---
 
 /**
- * Internal function to handle getting app path logic
+ * Internal function to handle getting app path
  */
 async function _handleGetAppPathLogic(params: {
   workspacePath?: string;

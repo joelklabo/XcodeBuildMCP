@@ -33,7 +33,7 @@ async function _handleMacOSBuildLogic(params: {
   derivedDataPath?: string;
   extraArgs?: string[];
 }): Promise<ToolResponse> {
-  log('info', `Starting macOS build for scheme ${params.scheme} (internal)`);
+  log('info', `Starting macOS build for scheme ${params.scheme}`);
   const _warningMessages: { type: 'text'; text: string }[] = [];
   const _warningRegex = /\[warning\]: (.*)/g;
 

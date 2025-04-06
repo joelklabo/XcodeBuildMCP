@@ -3,6 +3,21 @@
  */
 
 /**
+ * Enum representing Xcode build platforms.
+ */
+export enum XcodePlatform {
+  macOS = 'macOS',
+  iOS = 'iOS',
+  iOSSimulator = 'iOS Simulator',
+  watchOS = 'watchOS',
+  watchOSSimulator = 'watchOS Simulator',
+  tvOS = 'tvOS',
+  tvOSSimulator = 'tvOS Simulator',
+  visionOS = 'visionOS',
+  visionOSSimulator = 'visionOS Simulator',
+}
+
+/**
  * ToolResponse - Standard response format for tools
  * Compatible with MCP CallToolResult interface from the SDK
  */
