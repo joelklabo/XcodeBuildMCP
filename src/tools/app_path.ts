@@ -23,11 +23,9 @@ import {
   simulatorNameSchema,
   simulatorIdSchema,
   useLatestOSSchema,
-  platformDeviceSchema,
   platformSimulatorSchema,
   BaseWorkspaceParams,
   BaseProjectParams,
-  BaseAppPathDeviceParams,
   BaseAppPathSimulatorNameParams,
   BaseAppPathSimulatorIdParams,
 } from './common.js';
@@ -87,7 +85,12 @@ async function _handleGetAppPathLogic(params: {
         );
       }
     } else {
-      return createTextResponse(`Unsupported platform: ${params.platform}`, true);
+      // Handle other platform types
+      try {
+        destinationString = constructDestinationString(params.platform);
+      } catch (error) {
+        return createTextResponse(`Unsupported platform: ${params.platform}`, true);
+      }
     }
 
     command.push('-destination', destinationString);
@@ -117,7 +120,7 @@ async function _handleGetAppPathLogic(params: {
     if (params.platform === XcodePlatform.macOS) {
       nextStepsText = `Next Steps:
 1. Get bundle ID: get_macos_bundle_id({ appPath: "${appPath}" })
-2. Launch the app: open "${appPath}"`;
+2. Launch the app: launch_macos_app({ appPath: "${appPath}" })`;
     } else if (params.platform === XcodePlatform.iOSSimulator) {
       nextStepsText = `Next Steps:
 1. Get bundle ID: get_ios_bundle_id({ appPath: "${appPath}" })
@@ -144,26 +147,25 @@ async function _handleGetAppPathLogic(params: {
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    log('error', `Error getting app path: ${errorMessage}`);
-    return createTextResponse(`Error getting app path: ${errorMessage}`, true);
+    log('error', `Error retrieving app path: ${errorMessage}`);
+    return createTextResponse(`Error retrieving app path: ${errorMessage}`, true);
   }
 }
 
 // --- Public Tool Definitions ---
 
 /**
- * Registers the get app path for device workspace tool
+ * Registers the get_macos_app_path_workspace tool
  */
-export function registerGetAppPathForDeviceWorkspaceTool(server: McpServer): void {
-  type Params = BaseWorkspaceParams & BaseAppPathDeviceParams;
+export function registerGetMacOSAppPathWorkspaceTool(server: McpServer): void {
+  type Params = BaseWorkspaceParams & { configuration?: string };
   registerTool<Params>(
     server,
-    'get_app_path_for_device_workspace',
-    "Gets the app bundle path from build settings for a device platform (macOS, iOS, etc.) using a workspace. IMPORTANT: Requires workspacePath, scheme, and platform. Example: get_app_path_for_device_workspace({ workspacePath: '/path/to/workspace', scheme: 'MyScheme', platform: 'macOS' })",
+    'get_macos_app_path_workspace',
+    "Gets the app bundle path for a macOS application using a workspace. IMPORTANT: Requires workspacePath and scheme. Example: get_macos_app_path_workspace({ workspacePath: '/path/to/workspace', scheme: 'MyScheme' })",
     {
       workspacePath: workspacePathSchema,
       scheme: schemeSchema,
-      platform: platformDeviceSchema,
       configuration: configurationSchema,
     },
     async (params: Params) => {
@@ -172,13 +174,11 @@ export function registerGetAppPathForDeviceWorkspaceTool(server: McpServer): voi
       
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-
-      const platformValidation = validateRequiredParam('platform', params.platform);
-      if (!platformValidation.isValid) return platformValidation.errorResponse!;
       
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
+        platform: XcodePlatform.macOS,
         useLatestOS: true, 
       });
     }
@@ -186,18 +186,17 @@ export function registerGetAppPathForDeviceWorkspaceTool(server: McpServer): voi
 }
 
 /**
- * Registers the get_app_path_for_device_project tool
+ * Registers the get_macos_app_path_project tool
  */
-export function registerGetAppPathForDeviceProjectTool(server: McpServer): void {
-  type Params = BaseProjectParams & BaseAppPathDeviceParams;
+export function registerGetMacOSAppPathProjectTool(server: McpServer): void {
+  type Params = BaseProjectParams & { configuration?: string };
   registerTool<Params>(
     server,
-    'get_app_path_for_device_project',
-    "Gets the app bundle path from build settings for a device platform (macOS, iOS, etc.) using a project file. IMPORTANT: Requires projectPath, scheme, and platform. Example: get_app_path_for_device_project({ projectPath: '/path/to/project.xcodeproj', scheme: 'MyScheme', platform: 'macOS' })",
+    'get_macos_app_path_project',
+    "Gets the app bundle path for a macOS application using a project file. IMPORTANT: Requires projectPath and scheme. Example: get_macos_app_path_project({ projectPath: '/path/to/project.xcodeproj', scheme: 'MyScheme' })",
     {
       projectPath: projectPathSchema,
       scheme: schemeSchema,
-      platform: platformDeviceSchema,
       configuration: configurationSchema,
     },
     async (params: Params) => {
@@ -206,13 +205,11 @@ export function registerGetAppPathForDeviceProjectTool(server: McpServer): void 
 
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-
-      const platformValidation = validateRequiredParam('platform', params.platform);
-      if (!platformValidation.isValid) return platformValidation.errorResponse!;
       
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
+        platform: XcodePlatform.macOS,
         useLatestOS: true, 
       });
     }
@@ -220,21 +217,83 @@ export function registerGetAppPathForDeviceProjectTool(server: McpServer): void 
 }
 
 /**
- * Registers the get_app_path_by_name_workspace tool
+ * Registers the get_ios_device_app_path_workspace tool
  */
-export function registerGetAppPathByNameWorkspaceTool(server: McpServer): void {
+export function registerGetiOSDeviceAppPathWorkspaceTool(server: McpServer): void {
+  type Params = BaseWorkspaceParams & { configuration?: string };
+  registerTool<Params>(
+    server,
+    'get_ios_device_app_path_workspace',
+    "Gets the app bundle path for an iOS physical device application using a workspace. IMPORTANT: Requires workspacePath and scheme. Example: get_ios_device_app_path_workspace({ workspacePath: '/path/to/workspace', scheme: 'MyScheme' })",
+    {
+      workspacePath: workspacePathSchema,
+      scheme: schemeSchema,
+      configuration: configurationSchema,
+    },
+    async (params: Params) => {
+      const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
+      if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
+      
+      const schemeValidation = validateRequiredParam('scheme', params.scheme);
+      if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
+      
+      return _handleGetAppPathLogic({
+        ...params,
+        configuration: params.configuration ?? 'Debug',
+        platform: XcodePlatform.iOS,
+        useLatestOS: true, 
+      });
+    }
+  );
+}
+
+/**
+ * Registers the get_ios_device_app_path_project tool
+ */
+export function registerGetiOSDeviceAppPathProjectTool(server: McpServer): void {
+  type Params = BaseProjectParams & { configuration?: string };
+  registerTool<Params>(
+    server,
+    'get_ios_device_app_path_project',
+    "Gets the app bundle path for an iOS physical device application using a project file. IMPORTANT: Requires projectPath and scheme. Example: get_ios_device_app_path_project({ projectPath: '/path/to/project.xcodeproj', scheme: 'MyScheme' })",
+    {
+      projectPath: projectPathSchema,
+      scheme: schemeSchema,
+      configuration: configurationSchema,
+    },
+    async (params: Params) => {
+      const projectValidation = validateRequiredParam('projectPath', params.projectPath);
+      if (!projectValidation.isValid) return projectValidation.errorResponse!;
+
+      const schemeValidation = validateRequiredParam('scheme', params.scheme);
+      if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
+      
+      return _handleGetAppPathLogic({
+        ...params,
+        configuration: params.configuration ?? 'Debug',
+        platform: XcodePlatform.iOS,
+        useLatestOS: true, 
+      });
+    }
+  );
+}
+
+/**
+ * Registers the get_simulator_app_path_by_name_workspace tool
+ */
+export function registerGetSimulatorAppPathByNameWorkspaceTool(server: McpServer): void {
   type Params = BaseWorkspaceParams & BaseAppPathSimulatorNameParams;
   registerTool<Params>(
     server,
-    'get_app_path_by_name_workspace',
-    "Gets the app bundle path from build settings for a simulator platform using a workspace and simulator name. IMPORTANT: Requires workspacePath, scheme, platform, and simulatorName. Example: get_app_path_by_name_workspace({ workspacePath: '/path/to/workspace', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorName: 'iPhone 16' })",
+    'get_simulator_app_path_by_name_workspace',
+    "Gets the app bundle path for a simulator by name using a workspace. IMPORTANT: Requires workspacePath, scheme, platform, and simulatorName. Example: get_simulator_app_path_by_name_workspace({ workspacePath: '/path/to/workspace', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorName: 'iPhone 16' })",
     {
       workspacePath: workspacePathSchema,
       scheme: schemeSchema,
       platform: platformSimulatorSchema,
       simulatorName: simulatorNameSchema,
       configuration: configurationSchema,
-      useLatestOS: useLatestOSSchema, 
+      useLatestOS: useLatestOSSchema,
     },
     async (params: Params) => {
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
@@ -259,14 +318,14 @@ export function registerGetAppPathByNameWorkspaceTool(server: McpServer): void {
 }
 
 /**
- * Registers the get_app_path_by_name_project tool
+ * Registers the get_simulator_app_path_by_name_project tool
  */
-export function registerGetAppPathByNameProjectTool(server: McpServer): void {
+export function registerGetSimulatorAppPathByNameProjectTool(server: McpServer): void {
   type Params = BaseProjectParams & BaseAppPathSimulatorNameParams;
   registerTool<Params>(
     server,
-    'get_app_path_by_name_project',
-    "Gets the app bundle path from build settings for a simulator platform using a project file and simulator name. IMPORTANT: Requires projectPath, scheme, platform, and simulatorName. Example: get_app_path_by_name_project({ projectPath: '/path/to/project.xcodeproj', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorName: 'iPhone 16' })",
+    'get_simulator_app_path_by_name_project',
+    "Gets the app bundle path for a simulator by name using a project file. IMPORTANT: Requires projectPath, scheme, platform, and simulatorName. Example: get_simulator_app_path_by_name_project({ projectPath: '/path/to/project.xcodeproj', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorName: 'iPhone 16' })",
     {
       projectPath: projectPathSchema,
       scheme: schemeSchema,
@@ -298,21 +357,21 @@ export function registerGetAppPathByNameProjectTool(server: McpServer): void {
 }
 
 /**
- * Registers the get_app_path_by_id_workspace tool
+ * Registers the get_simulator_app_path_by_id_workspace tool
  */
-export function registerGetAppPathByIdWorkspaceTool(server: McpServer): void {
+export function registerGetSimulatorAppPathByIdWorkspaceTool(server: McpServer): void {
   type Params = BaseWorkspaceParams & BaseAppPathSimulatorIdParams;
   registerTool<Params>(
     server,
-    'get_app_path_by_id_workspace',
-    "Gets the app bundle path from build settings for a simulator platform using a workspace and simulator UUID. IMPORTANT: Requires workspacePath, scheme, platform, and simulatorId. Example: get_app_path_by_id_workspace({ workspacePath: '/path/to/workspace', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorId: 'SIMULATOR_UUID' })",
+    'get_simulator_app_path_by_id_workspace',
+    "Gets the app bundle path for a simulator by UUID using a workspace. IMPORTANT: Requires workspacePath, scheme, platform, and simulatorId. Example: get_simulator_app_path_by_id_workspace({ workspacePath: '/path/to/workspace', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorId: 'SIMULATOR_UUID' })",
     {
       workspacePath: workspacePathSchema,
       scheme: schemeSchema,
       platform: platformSimulatorSchema,
       simulatorId: simulatorIdSchema,
       configuration: configurationSchema,
-      useLatestOS: useLatestOSSchema, 
+      useLatestOS: useLatestOSSchema,
     },
     async (params: Params) => {
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
@@ -337,14 +396,14 @@ export function registerGetAppPathByIdWorkspaceTool(server: McpServer): void {
 }
 
 /**
- * Registers the get_app_path_by_id_project tool
+ * Registers the get_simulator_app_path_by_id_project tool
  */
-export function registerGetAppPathByIdProjectTool(server: McpServer): void {
+export function registerGetSimulatorAppPathByIdProjectTool(server: McpServer): void {
   type Params = BaseProjectParams & BaseAppPathSimulatorIdParams;
   registerTool<Params>(
     server,
-    'get_app_path_by_id_project',
-    "Gets the app bundle path from build settings for a simulator platform using a project file and simulator UUID. IMPORTANT: Requires projectPath, scheme, platform, and simulatorId. Example: get_app_path_by_id_project({ projectPath: '/path/to/project.xcodeproj', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorId: 'SIMULATOR_UUID' })",
+    'get_simulator_app_path_by_id_project',
+    "Gets the app bundle path for a simulator by UUID using a project file. IMPORTANT: Requires projectPath, scheme, platform, and simulatorId. Example: get_simulator_app_path_by_id_project({ projectPath: '/path/to/project.xcodeproj', scheme: 'MyScheme', platform: 'iOS Simulator', simulatorId: 'SIMULATOR_UUID' })",
     {
       projectPath: projectPathSchema,
       scheme: schemeSchema,

@@ -725,9 +725,9 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
     const buildResponse = await _handleIOSSimulatorBuildLogic(buildParams);
 
     const buildResponseText = buildResponse.content?.[0]?.text as string;
-    if (buildResponse.isError || !buildResponseText || !buildResponseText.includes('successful')) {
+    if (buildResponse.isError || !buildResponseText || !buildResponseText.includes('succeeded')) {
       return createTextResponse(
-        `iOS Simulator build failed: ${buildResponse.content[0]?.text ?? 'Unknown build error'}`,
+        `iOS Simulator build failed: ${buildResponse.content?.[0]?.text ?? 'Unknown build error'}`,
         true,
       );
     }
@@ -747,18 +747,16 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
 
     if (appPathResponse.isError || !appPathResponse.content?.[0]?.text) {
       return createTextResponse(
-        `Build succeeded, but failed to get app path: ${appPathResponse.content[0]?.text ?? 'Unknown error'}`,
+        `Build succeeded, but failed to get app path: ${appPathResponse.content?.[0]?.text ?? 'Unknown error'}`,
         true,
       );
     }
 
     const responseText = appPathResponse.content?.[0]?.text as string;
-    const appPathMatch = responseText ? responseText.match(
-      /✅ App bundle path.*?:\s*(.*?)(?:\n|$)/
-    ) : null;
+    const appPathMatch = responseText.match(/✅ App path retrieved successfully: (.*?)(?:\n|$)/);
     if (!appPathMatch || !appPathMatch[1]) {
       return createTextResponse(
-        `Build succeeded, but could not parse app path from settings output: ${appPathResponse.content[0].text}`,
+        `Build succeeded, but could not parse app path from output: ${responseText}`,
         true,
       );
     }
@@ -767,25 +765,20 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
 
     // --- Find/Boot Simulator Step ---
     let simulatorUuid = params.simulatorId;
-    if (!simulatorUuid) {
+    if (!simulatorUuid && params.simulatorName) {
       try {
+        log('info', `Finding simulator UUID for name: ${params.simulatorName}`);
         const simulatorsOutput = execSync('xcrun simctl list devices available --json').toString();
         const simulatorsJson = JSON.parse(simulatorsOutput);
         let foundSimulator = null;
 
+        // Find the simulator in the available devices list
         for (const runtime in simulatorsJson.devices) {
           const devices = simulatorsJson.devices[runtime];
           for (const device of devices) {
-            if (params.simulatorName) {
-               // Prioritize exact match if name is given
-              if (device.name === params.simulatorName && device.isAvailable) {
-                foundSimulator = device;
-                break;
-              }
-            } else if (device.name.includes('iPhone') && device.isAvailable) {
-              // Fallback to an available iPhone if no name/id provided (less likely now)
-               foundSimulator = device;
-               break;
+            if (device.name === params.simulatorName && device.isAvailable) {
+              foundSimulator = device;
+              break;
             }
           }
           if (foundSimulator) break;
@@ -796,7 +789,7 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
           log('info', `Found simulator for run: ${foundSimulator.name} (${simulatorUuid})`);
         } else {
           return createTextResponse(
-            `Build succeeded, but could not find an available simulator named '${params.simulatorName || 'any iPhone'}'. Use list_simulators({}) to check available devices.`,
+            `Build succeeded, but could not find an available simulator named '${params.simulatorName}'. Use list_simulators({}) to check available devices.`,
             true,
           );
         }
@@ -806,50 +799,93 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
       }
     }
 
+    if (!simulatorUuid) {
+      return createTextResponse(
+        'Build succeeded, but no simulator specified and failed to find a suitable one.',
+        true
+      );
+    }
+
     // Ensure simulator is booted
     try {
-      const simulatorStateOutput = execSync(
-        `xcrun simctl list devices | grep "${simulatorUuid}"`, // Quote UUID just in case
-      ).toString();
-      const isBooted = simulatorStateOutput.includes('(Booted)');
+      log('info', `Checking simulator state for UUID: ${simulatorUuid}`);
+      const simulatorStateOutput = execSync('xcrun simctl list devices').toString();
+      const simulatorLine = simulatorStateOutput
+        .split('\n')
+        .find(line => line.includes(simulatorUuid));
+      
+      const isBooted = simulatorLine ? simulatorLine.includes('(Booted)') : false;
+
+      if (!simulatorLine) {
+        return createTextResponse(
+          `Build succeeded, but could not find simulator with UUID: ${simulatorUuid}`,
+          true
+        );
+      }
 
       if (!isBooted) {
         log('info', `Booting simulator ${simulatorUuid}`);
         execSync(`xcrun simctl boot "${simulatorUuid}"`);
+        // Wait a moment for the simulator to fully boot
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } else {
         log('info', `Simulator ${simulatorUuid} is already booted`);
       }
     } catch (error) {
-        // Check if the error is just "No devices matching search", which might mean the ID was invalid
-        if (error instanceof Error && error.message.includes('No devices matching search')) {
-             return createTextResponse(`Build succeeded, but simulator with ID '${simulatorUuid}' not found. Use list_simulators({}) to verify.`, true);
-        }
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return createTextResponse(`Build succeeded, but error checking/booting simulator: ${errorMessage}`, true);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log('error', `Error checking/booting simulator: ${errorMessage}`);
+      return createTextResponse(`Build succeeded, but error checking/booting simulator: ${errorMessage}`, true);
     }
 
+    // --- Open Simulator UI Step ---
+    try {
+      log('info', 'Opening Simulator app');
+      execSync('open -a Simulator');
+      // Give the Simulator app time to open
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log('warning', `Warning: Could not open Simulator app: ${errorMessage}`);
+      // Don't fail the whole operation for this
+    }
 
     // --- Install App Step ---
     try {
+      log('info', `Installing app at path: ${appBundlePath} to simulator: ${simulatorUuid}`);
       execSync(`xcrun simctl install "${simulatorUuid}" "${appBundlePath}"`);
+      // Wait a moment for installation to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      log('error', `Error installing app: ${errorMessage}`);
       return createTextResponse(`Build succeeded, but error installing app on simulator: ${errorMessage}`, true);
     }
 
     // --- Get Bundle ID Step ---
     let bundleId;
     try {
-      // Use PlistBuddy as a more reliable alternative to `defaults read`
-      bundleId = execSync(
-        `/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "${appBundlePath}/Info.plist"`,
-      )
-        .toString()
-        .trim();
-      if (!bundleId) throw new Error('PlistBuddy returned empty bundle ID');
+      log('info', `Extracting bundle ID from app: ${appBundlePath}`);
+      
+      // Try PlistBuddy first (more reliable)
+      try {
+        bundleId = execSync(
+          `/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "${appBundlePath}/Info.plist"`,
+        ).toString().trim();
+      } catch (plistError: unknown) {
+        // Fallback to defaults if PlistBuddy fails
+        const errorMessage = plistError instanceof Error ? plistError.message : String(plistError);
+        log('warning', `PlistBuddy failed, trying defaults: ${errorMessage}`);
+        bundleId = execSync(`defaults read "${appBundlePath}/Info" CFBundleIdentifier`).toString().trim();
+      }
+      
+      if (!bundleId) {
+        throw new Error('Could not extract bundle ID from Info.plist');
+      }
+      
       log('info', `Bundle ID for run: ${bundleId}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      log('error', `Error getting bundle ID: ${errorMessage}`);
       return createTextResponse(
         `Build and install succeeded, but error getting bundle ID: ${errorMessage}`,
         true,
@@ -858,35 +894,27 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
 
     // --- Launch App Step ---
     try {
+      log('info', `Launching app with bundle ID: ${bundleId} on simulator: ${simulatorUuid}`);
       execSync(`xcrun simctl launch "${simulatorUuid}" "${bundleId}"`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      log('error', `Error launching app: ${errorMessage}`);
       return createTextResponse(
-        `Build, install, and bundle ID retrieval succeeded, but error launching app on simulator: ${errorMessage}`,
+        `Build and install succeeded, but error launching app on simulator: ${errorMessage}`,
         true,
       );
     }
 
-    // --- Open Simulator UI Step (Best Effort) ---
-    try {
-      execSync('open -a Simulator');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      log('warning', `Warning: Could not open Simulator app: ${errorMessage}`);
-      // Don't fail the whole operation for this
-    }
-
     // --- Success ---
+    log('info', '✅ iOS simulator build & run succeeded.');
     return {
       content: [
         {
           type: 'text' as const,
-          text: `✅ Successfully built, installed, and launched app on iOS Simulator:
-- App: ${appBundlePath}
-- Bundle ID: ${bundleId}
-- Simulator: ${simulatorUuid}
-
-The app should now be running in the iOS Simulator.`,
+          text: `✅ iOS simulator build and run succeeded for scheme ${params.scheme} targeting simulator ${params.simulatorName || simulatorUuid}.
+          
+The app (${bundleId}) is now running in the iOS Simulator. 
+If you don't see the simulator window, it may be hidden behind other windows. The Simulator app should be open.`
         },
       ],
     };
@@ -1041,7 +1069,7 @@ export function registerIOSSimulatorBuildByIdProjectTool(server: McpServer): voi
         .describe('Build configuration (Debug, Release, etc.)'),
       simulatorId: z
         .string()
-        .describe('UUID of the simulator to use (obtained from list_simulators) (Required)'),
+        .describe('UUID of the simulator to use (obtained from listSimulators) (Required)'),
       useLatestOS: z
         .boolean()
         .default(true) // Note: OS setting might be ignored when ID is specified

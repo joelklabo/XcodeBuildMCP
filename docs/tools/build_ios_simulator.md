@@ -13,6 +13,14 @@ This document describes the iOS Simulator build tools available in XcodeBuildMCP
 
 ### iOS Simulator Build and Run Tools
 
+These tools perform a complete workflow including:
+1. Building the app
+2. Getting the app path
+3. Ensuring the simulator is booted
+4. Opening the simulator UI
+5. Installing the app
+6. Launching the app
+
 - `ios_simulator_build_and_run_by_name_workspace` - Builds and runs an iOS app on a simulator by name using a workspace
 - `ios_simulator_build_and_run_by_name_project` - Builds and runs an iOS app on a simulator by name using a project file
 - `ios_simulator_build_and_run_by_id_workspace` - Builds and runs an iOS app on a simulator by UUID using a workspace
@@ -66,11 +74,48 @@ ios_simulator_build_and_run_by_name_workspace({
   simulatorName: 'iPhone 16'
 })
 
+// By name with a project file
+ios_simulator_build_and_run_by_name_project({
+  projectPath: '/path/to/MyProject.xcodeproj',
+  scheme: 'MyScheme',
+  simulatorName: 'iPhone 16'
+})
+
+// By UUID with a workspace
+ios_simulator_build_and_run_by_id_workspace({
+  workspacePath: '/path/to/MyProject.xcworkspace',
+  scheme: 'MyScheme',
+  simulatorId: 'SIMULATOR_UUID'
+})
+
 // By UUID with a project file
 ios_simulator_build_and_run_by_id_project({
   projectPath: '/path/to/MyProject.xcodeproj',
   scheme: 'MyScheme',
   simulatorId: 'SIMULATOR_UUID'
+})
+```
+
+## Additional Parameters
+
+All tools support the following additional parameters:
+
+- `configuration` - Build configuration to use (e.g., 'Debug', 'Release'). Defaults to 'Debug'.
+- `useLatestOS` - Whether to use the latest OS version for the simulator. Defaults to true.
+- `derivedDataPath` - Path where build products and other derived data will go.
+- `extraArgs` - Additional arguments to pass to xcodebuild.
+
+Example with optional parameters:
+
+```javascript
+ios_simulator_build_by_name_project({
+  projectPath: '/path/to/MyProject.xcodeproj',
+  scheme: 'MyScheme',
+  simulatorName: 'iPhone 16',
+  configuration: 'Release',
+  useLatestOS: true,
+  derivedDataPath: '/custom/derived/data/path',
+  extraArgs: ['-quiet', '-allowProvisioningUpdates']
 })
 ```
 

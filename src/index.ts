@@ -26,12 +26,14 @@ import { registerIOSDeviceBuildTools } from './tools/build_ios_device.js';
 
 // App path tools
 import {
-  registerGetAppPathByNameWorkspaceTool,
-  registerGetAppPathByNameProjectTool,
-  registerGetAppPathByIdWorkspaceTool,
-  registerGetAppPathByIdProjectTool,
-  registerGetAppPathForDeviceWorkspaceTool,
-  registerGetAppPathForDeviceProjectTool,
+  registerGetMacOSAppPathWorkspaceTool,
+  registerGetMacOSAppPathProjectTool,
+  registerGetiOSDeviceAppPathWorkspaceTool,
+  registerGetiOSDeviceAppPathProjectTool,
+  registerGetSimulatorAppPathByNameWorkspaceTool,
+  registerGetSimulatorAppPathByNameProjectTool,
+  registerGetSimulatorAppPathByIdWorkspaceTool,
+  registerGetSimulatorAppPathByIdProjectTool,
 } from './tools/app_path.js';
 
 // Build settings and scheme tools
@@ -92,12 +94,14 @@ async function main(): Promise<void> {
     registerShowBuildSettingsProjectTool(server);
 
     // 5. App path tools (after build)
-    registerGetAppPathByNameWorkspaceTool(server);
-    registerGetAppPathByNameProjectTool(server);
-    registerGetAppPathByIdWorkspaceTool(server);
-    registerGetAppPathByIdProjectTool(server);
-    registerGetAppPathForDeviceWorkspaceTool(server);
-    registerGetAppPathForDeviceProjectTool(server);
+    registerGetMacOSAppPathWorkspaceTool(server);
+    registerGetMacOSAppPathProjectTool(server);
+    registerGetiOSDeviceAppPathWorkspaceTool(server);
+    registerGetiOSDeviceAppPathProjectTool(server);
+    registerGetSimulatorAppPathByNameWorkspaceTool(server);
+    registerGetSimulatorAppPathByNameProjectTool(server);
+    registerGetSimulatorAppPathByIdWorkspaceTool(server);
+    registerGetSimulatorAppPathByIdProjectTool(server);
 
     // 6. Simulator management tools
     registerBootSimulatorTool(server);
