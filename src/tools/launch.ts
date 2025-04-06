@@ -5,7 +5,6 @@
 import { z } from 'zod';
 import { log } from '../utils/logger.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { execSync } from 'child_process';
 import { validateRequiredParam, validateFileExists } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import { promisify } from 'util';
@@ -47,7 +46,7 @@ export function registerLaunchMacOSAppTool(server: McpServer): void {
       try {
         // Construct the command
         let command = `open "${params.appPath}"`;
-        
+
         // Add any additional arguments if provided
         if (params.args && params.args.length > 0) {
           command += ` --args ${params.args.join(' ')}`;

@@ -3,13 +3,9 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import { log } from '../utils/logger.js';
 import { executeXcodeCommand } from '../utils/xcode.js';
-import {
-  validateRequiredParam,
-  createTextResponse,
-} from '../utils/validation.js';
+import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import {
   registerTool,
@@ -95,21 +91,21 @@ async function _handleListSchemesLogic(params: {
 
     // Extract schemes from the output
     const schemesMatch = result.output.match(/Schemes:([\s\S]*?)(?=\n\n|$)/);
-    
+
     if (!schemesMatch) {
       return createTextResponse('No schemes found in the output', true);
     }
-    
+
     const schemeLines = schemesMatch[1].trim().split('\n');
-    const schemes = schemeLines.map(line => line.trim()).filter(line => line);
-    
+    const schemes = schemeLines.map((line) => line.trim()).filter((line) => line);
+
     // Prepare next steps with the first scheme if available
     let nextStepsText = '';
     if (schemes.length > 0) {
       const firstScheme = schemes[0];
       const projectOrWorkspace = params.workspacePath ? 'workspace' : 'project';
       const path = params.workspacePath || params.projectPath;
-      
+
       nextStepsText = `Next Steps:
 1. Build the app: ${projectOrWorkspace === 'workspace' ? 'macos_build_workspace' : 'macos_build_project'}({ ${projectOrWorkspace}Path: "${path}", scheme: "${firstScheme}" })
    or for iOS: ${projectOrWorkspace === 'workspace' ? 'ios_simulator_build_by_name_workspace' : 'ios_simulator_build_by_name_project'}({ ${projectOrWorkspace}Path: "${path}", scheme: "${firstScheme}", simulatorName: "iPhone 16" })
@@ -157,12 +153,12 @@ export function registerShowBuildSettingsWorkspaceTool(server: McpServer): void 
       // Validate required parameters
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       return _handleShowBuildSettingsLogic(params);
-    }
+    },
   );
 }
 
@@ -182,12 +178,12 @@ export function registerShowBuildSettingsProjectTool(server: McpServer): void {
       // Validate required parameters
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
       if (!projectValidation.isValid) return projectValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       return _handleShowBuildSettingsLogic(params);
-    }
+    },
   );
 }
 
@@ -206,9 +202,9 @@ export function registerListSchemesWorkspaceTool(server: McpServer): void {
       // Validate required parameters
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       return _handleListSchemesLogic(params);
-    }
+    },
   );
 }
 
@@ -227,8 +223,8 @@ export function registerListSchemesProjectTool(server: McpServer): void {
       // Validate required parameters
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
       if (!projectValidation.isValid) return projectValidation.errorResponse!;
-      
+
       return _handleListSchemesLogic(params);
-    }
+    },
   );
 }

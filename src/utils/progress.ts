@@ -29,7 +29,7 @@ export function sendProgressUpdate(update: ToolProgressUpdate): void {
     log('warning', 'Progress update sent before server initialization');
     return;
   }
-  
+
   try {
     // Store or update the active operation
     if (update.status === 'running') {
@@ -38,19 +38,21 @@ export function sendProgressUpdate(update: ToolProgressUpdate): void {
       // Remove completed/failed operations
       activeOperations.delete(update.operationId);
     }
-    
+
     // Log progress updates for now, in the future when MCP fully supports progress events
     // we could extend this to use the appropriate API
     // For now, we're logging detailed progress information
     const progressMessage = `Operation [${update.operationId}]: ${update.status.toUpperCase()} - ${update.message} (${update.progress || 0}%)`;
-    
+
     // Console error is used because MCP communication happens on stdout
     console.error(progressMessage);
-    
+
     // Log at appropriate level based on status
     const level = update.status === 'failed' ? 'error' : 'info';
-    log(level, `Progress update [${update.operationId}]: ${update.message} (${update.progress || 0}%)`);
-    
+    log(
+      level,
+      `Progress update [${update.operationId}]: ${update.message} (${update.progress || 0}%)`,
+    );
   } catch (error) {
     log('error', `Failed to send progress update: ${error}`);
   }
@@ -61,11 +63,13 @@ export function sendProgressUpdate(update: ToolProgressUpdate): void {
  * @param operationName Name of the operation for logging
  * @returns Progress callback function
  */
-export function createProgressCallback(operationName: string): (update: ToolProgressUpdate) => void {
+export function createProgressCallback(
+  operationName: string,
+): (update: ToolProgressUpdate) => void {
   return (update: ToolProgressUpdate) => {
     sendProgressUpdate({
       ...update,
-      message: `${operationName}: ${update.message}`
+      message: `${operationName}: ${update.message}`,
     });
   };
 }

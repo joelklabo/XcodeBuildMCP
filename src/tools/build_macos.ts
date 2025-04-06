@@ -6,14 +6,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { log } from '../utils/logger.js';
-import {
-  executeXcodeCommand,
-  ProgressCallback,
-} from '../utils/xcode.js';
+import { executeXcodeCommand } from '../utils/xcode.js';
 import { createProgressCallback } from '../utils/progress.js';
-import {
-  createTextResponse,
-} from '../utils/validation.js';
+import { createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import {
   registerTool,
@@ -39,8 +34,8 @@ async function _handleMacOSBuildLogic(params: {
   extraArgs?: string[];
 }): Promise<ToolResponse> {
   log('info', `Starting macOS build for scheme ${params.scheme} (internal)`);
-  const warningMessages: { type: 'text'; text: string }[] = [];
-  const warningRegex = /\[warning\]: (.*)/g;
+  const _warningMessages: { type: 'text'; text: string }[] = [];
+  const _warningRegex = /\[warning\]: (.*)/g;
 
   try {
     const command = ['xcodebuild'];
@@ -67,22 +62,22 @@ async function _handleMacOSBuildLogic(params: {
 
     // Create a progress callback for this operation
     const progressCallback = createProgressCallback(`macOS Build ${params.scheme}`);
-    
+
     const result = await executeXcodeCommand(command, 'macOS Build', progressCallback);
 
     let match;
-    while ((match = warningRegex.exec(result.output)) !== null) {
-      warningMessages.push({ type: 'text', text: `⚠️ Warning: ${match[1]}` });
+    while ((match = _warningRegex.exec(result.output)) !== null) {
+      _warningMessages.push({ type: 'text', text: `⚠️ Warning: ${match[1]}` });
     }
 
     if (!result.success) {
       log('error', `macOS build failed for scheme ${params.scheme}: ${result.error}`);
       const errorResponse = createTextResponse(
         `❌ macOS build failed for scheme ${params.scheme}. Error: ${result.error}`,
-        true
+        true,
       );
       if (errorResponse.content) {
-        errorResponse.content.unshift(...warningMessages);
+        errorResponse.content.unshift(..._warningMessages);
       }
       return errorResponse;
     }
@@ -90,7 +85,7 @@ async function _handleMacOSBuildLogic(params: {
     log('info', `✅ macOS build succeeded for scheme ${params.scheme}.`);
     const successResponse: ToolResponse = {
       content: [
-        ...warningMessages,
+        ..._warningMessages,
         { type: 'text', text: `✅ macOS build succeeded for scheme ${params.scheme}.` },
         {
           type: 'text',
@@ -115,26 +110,30 @@ async function _getAppPathFromBuildSettings(params: {
   derivedDataPath?: string;
   extraArgs?: string[];
 }): Promise<{ success: boolean; appPath?: string; error?: string }> {
-    try {
-      const getAppSettingsCommand = ['xcodebuild'];
+  try {
+    const getAppSettingsCommand = ['xcodebuild'];
 
-      if (params.workspacePath) {
-        getAppSettingsCommand.push('-workspace', params.workspacePath);
-      } else if (params.projectPath) {
-        getAppSettingsCommand.push('-project', params.projectPath);
-      } // Path guaranteed by caller validation
-      getAppSettingsCommand.push(
-        '-scheme',
-        params.scheme,
-        '-configuration',
-        params.configuration,
-        '-showBuildSettings'
-      );
+    if (params.workspacePath) {
+      getAppSettingsCommand.push('-workspace', params.workspacePath);
+    } else if (params.projectPath) {
+      getAppSettingsCommand.push('-project', params.projectPath);
+    } // Path guaranteed by caller validation
+    getAppSettingsCommand.push(
+      '-scheme',
+      params.scheme,
+      '-configuration',
+      params.configuration,
+      '-showBuildSettings',
+    );
 
-      // Create a progress callback for getting build settings
-      const settingsProgressCallback = createProgressCallback(`Get Build Settings ${params.scheme}`);
-      
-      const settingsResult = await executeXcodeCommand(getAppSettingsCommand, 'Get Build Settings for Launch', settingsProgressCallback);
+    // Create a progress callback for getting build settings
+    const settingsProgressCallback = createProgressCallback(`Get Build Settings ${params.scheme}`);
+
+    const settingsResult = await executeXcodeCommand(
+      getAppSettingsCommand,
+      'Get Build Settings for Launch',
+      settingsProgressCallback,
+    );
     if (!settingsResult.success) {
       return { success: false, error: settingsResult.error };
     }
@@ -166,8 +165,8 @@ async function _handleMacOSBuildAndRunLogic(params: {
   extraArgs?: string[];
 }): Promise<ToolResponse> {
   log('info', 'Handling macOS build & run logic...');
-  const warningMessages: { type: 'text'; text: string }[] = [];
-  const warningRegex = /\[warning\]: (.*)/g;
+  const _warningMessages: { type: 'text'; text: string }[] = [];
+  const _warningRegex = /\[warning\]: (.*)/g;
 
   try {
     // First, build the app
@@ -177,7 +176,7 @@ async function _handleMacOSBuildAndRunLogic(params: {
     if (buildResult.isError) {
       return buildResult; // Return build failure directly
     }
-    const warningMessages = buildResult.content?.filter(c => c.type === 'text') ?? [];
+    const buildWarningMessages = buildResult.content?.filter((c) => c.type === 'text') ?? [];
 
     // 2. Build succeeded, now get the app path using the helper
     const appPathResult = await _getAppPathFromBuildSettings(params);
@@ -187,10 +186,10 @@ async function _handleMacOSBuildAndRunLogic(params: {
       log('error', 'Build succeeded, but failed to get app path to launch.');
       const response = createTextResponse(
         `✅ Build succeeded, but failed to get app path to launch: ${appPathResult.error}`,
-        false // Build succeeded, so not a full error
+        false, // Build succeeded, so not a full error
       );
       if (response.content) {
-        response.content.unshift(...warningMessages);
+        response.content.unshift(...buildWarningMessages);
       }
       return response;
     }
@@ -205,8 +204,11 @@ async function _handleMacOSBuildAndRunLogic(params: {
       log('info', `✅ macOS app launched successfully: ${appPath}`);
       const successResponse: ToolResponse = {
         content: [
-          ...warningMessages,
-          { type: 'text', text: `✅ macOS build and run succeeded for scheme ${params.scheme}. App launched: ${appPath}` },
+          ...buildWarningMessages,
+          {
+            type: 'text',
+            text: `✅ macOS build and run succeeded for scheme ${params.scheme}. App launched: ${appPath}`,
+          },
         ],
       };
       return successResponse;
@@ -215,17 +217,20 @@ async function _handleMacOSBuildAndRunLogic(params: {
       log('error', `Build succeeded, but failed to launch app ${appPath}: ${errorMessage}`);
       const errorResponse = createTextResponse(
         `✅ Build succeeded, but failed to launch app ${appPath}. Error: ${errorMessage}`,
-        false // Build succeeded
+        false, // Build succeeded
       );
       if (errorResponse.content) {
-        errorResponse.content.unshift(...warningMessages);
+        errorResponse.content.unshift(...buildWarningMessages);
       }
       return errorResponse;
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     log('error', `Error during macOS build & run logic: ${errorMessage}`);
-    const errorResponse = createTextResponse(`Error during macOS build and run: ${errorMessage}`, true);
+    const errorResponse = createTextResponse(
+      `Error during macOS build and run: ${errorMessage}`,
+      true,
+    );
     return errorResponse;
   }
 }
@@ -253,10 +258,11 @@ export function registerMacOSBuildTools(server: McpServer): void {
       derivedDataPath: derivedDataPathSchema,
       extraArgs: extraArgsSchema,
     },
-    async (params) => _handleMacOSBuildLogic({
-      ...params,
-      configuration: params.configuration ?? 'Debug',
-    })
+    async (params) =>
+      _handleMacOSBuildLogic({
+        ...params,
+        configuration: params.configuration ?? 'Debug',
+      }),
   );
 
   type ProjectParams = {
@@ -278,10 +284,11 @@ export function registerMacOSBuildTools(server: McpServer): void {
       derivedDataPath: derivedDataPathSchema,
       extraArgs: extraArgsSchema,
     },
-    async (params) => _handleMacOSBuildLogic({
-      ...params,
-      configuration: params.configuration ?? 'Debug',
-    })
+    async (params) =>
+      _handleMacOSBuildLogic({
+        ...params,
+        configuration: params.configuration ?? 'Debug',
+      }),
   );
 }
 
@@ -306,10 +313,11 @@ export function registerMacOSBuildAndRunTools(server: McpServer): void {
       derivedDataPath: derivedDataPathSchema,
       extraArgs: extraArgsSchema,
     },
-    async (params) => _handleMacOSBuildAndRunLogic({
-      ...params,
-      configuration: params.configuration ?? 'Debug',
-    })
+    async (params) =>
+      _handleMacOSBuildAndRunLogic({
+        ...params,
+        configuration: params.configuration ?? 'Debug',
+      }),
   );
 
   type ProjectParams = {
@@ -331,9 +339,10 @@ export function registerMacOSBuildAndRunTools(server: McpServer): void {
       derivedDataPath: derivedDataPathSchema,
       extraArgs: extraArgsSchema,
     },
-    async (params) => _handleMacOSBuildAndRunLogic({
-      ...params,
-      configuration: params.configuration ?? 'Debug',
-    })
+    async (params) =>
+      _handleMacOSBuildAndRunLogic({
+        ...params,
+        configuration: params.configuration ?? 'Debug',
+      }),
   );
 }

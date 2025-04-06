@@ -4,15 +4,8 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
-import {
-  executeXcodeCommand,
-  XcodePlatform,
-  constructDestinationString,
-} from '../utils/xcode.js';
-import {
-  validateRequiredParam,
-  createTextResponse,
-} from '../utils/validation.js';
+import { executeXcodeCommand, XcodePlatform, constructDestinationString } from '../utils/xcode.js';
+import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import {
   registerTool,
@@ -66,14 +59,14 @@ async function _handleIOSSimulatorBuildLogic(params: {
       destinationString = constructDestinationString(
         XcodePlatform.iOSSimulator,
         undefined,
-        params.simulatorId
+        params.simulatorId,
       );
     } else if (params.simulatorName) {
       destinationString = constructDestinationString(
         XcodePlatform.iOSSimulator,
         params.simulatorName,
         undefined,
-        params.useLatestOS
+        params.useLatestOS,
       );
     } else {
       // This should never happen due to validation in the public functions
@@ -103,7 +96,7 @@ async function _handleIOSSimulatorBuildLogic(params: {
       log('error', `iOS simulator build failed: ${result.error}`);
       const errorResponse = createTextResponse(
         `❌ iOS simulator build failed. Error: ${result.error}`,
-        true
+        true,
       );
       if (warningMessages.length > 0 && errorResponse.content) {
         errorResponse.content.unshift(...warningMessages);
@@ -119,12 +112,17 @@ async function _handleIOSSimulatorBuildLogic(params: {
     const successResponse: ToolResponse = {
       content: [
         ...warningMessages,
-        { type: 'text', text: `✅ iOS simulator build succeeded for scheme ${params.scheme} targeting ${target}.`},
-        { type: 'text', text: `Next Steps:\n1. Get App Path: Use get_app_path_by_${params.simulatorId ? 'id' : 'name'}_...\n2. Install App: Use install_app_in_simulator\n3. Launch App: Use launch_app_in_simulator`}
-      ]
+        {
+          type: 'text',
+          text: `✅ iOS simulator build succeeded for scheme ${params.scheme} targeting ${target}.`,
+        },
+        {
+          type: 'text',
+          text: `Next Steps:\n1. Get App Path: Use get_app_path_by_${params.simulatorId ? 'id' : 'name'}_...\n2. Install App: Use install_app_in_simulator\n3. Launch App: Use launch_app_in_simulator`,
+        },
+      ],
     };
     return successResponse;
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     log('error', `Error during iOS Simulator build: ${errorMessage}`);
@@ -151,62 +149,65 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
   try {
     // --- Build Step ---
     const buildResult = await _handleIOSSimulatorBuildLogic(params);
-    
+
     if (buildResult.isError) {
       return buildResult; // Return the build error
     }
 
     // --- Get App Path Step ---
     const command = ['xcodebuild'];
-    
+
     if (params.workspacePath) {
       command.push('-workspace', params.workspacePath);
     } else if (params.projectPath) {
       command.push('-project', params.projectPath);
     }
-    
+
     command.push('-scheme', params.scheme);
     command.push('-configuration', params.configuration);
-    
+
     // Construct destination string based on simulator parameters
     let destinationString: string;
     if (params.simulatorId) {
       destinationString = constructDestinationString(
         XcodePlatform.iOSSimulator,
         undefined,
-        params.simulatorId
+        params.simulatorId,
       );
     } else if (params.simulatorName) {
       destinationString = constructDestinationString(
         XcodePlatform.iOSSimulator,
         params.simulatorName,
         undefined,
-        params.useLatestOS
+        params.useLatestOS,
       );
     } else {
       // This should never happen due to validation in the public functions
       return createTextResponse('Either simulatorId or simulatorName must be provided', true);
     }
-    
+
     command.push('-destination', destinationString);
     command.push('-showBuildSettings');
-    
+
     const result = await executeXcodeCommand(command, 'Get App Path');
 
     if (!result.success) {
       log('error', `Failed to get app path: ${result.error}`);
-      return createTextResponse(`Build succeeded, but failed to get app path: ${result.error}`, true);
+      return createTextResponse(
+        `Build succeeded, but failed to get app path: ${result.error}`,
+        true,
+      );
     }
-    
+
     // Extract CODESIGNING_FOLDER_PATH from build settings to get app path
     const appPathMatch = result.output.match(/CODESIGNING_FOLDER_PATH = (.+\.app)/);
     if (!appPathMatch || !appPathMatch[1]) {
       return createTextResponse(
-        `Build succeeded, but could not find app path in build settings.`, 
-        true
+        `Build succeeded, but could not find app path in build settings.`,
+        true,
       );
     }
-    
+
     const appBundlePath = appPathMatch[1].trim();
     log('info', `App bundle path for run: ${appBundlePath}`);
 
@@ -242,14 +243,17 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        return createTextResponse(`Build succeeded, but error finding simulator: ${errorMessage}`, true);
+        return createTextResponse(
+          `Build succeeded, but error finding simulator: ${errorMessage}`,
+          true,
+        );
       }
     }
 
     if (!simulatorUuid) {
       return createTextResponse(
         'Build succeeded, but no simulator specified and failed to find a suitable one.',
-        true
+        true,
       );
     }
 
@@ -259,14 +263,14 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
       const simulatorStateOutput = execSync('xcrun simctl list devices').toString();
       const simulatorLine = simulatorStateOutput
         .split('\n')
-        .find(line => line.includes(simulatorUuid));
-      
+        .find((line) => line.includes(simulatorUuid));
+
       const isBooted = simulatorLine ? simulatorLine.includes('(Booted)') : false;
 
       if (!simulatorLine) {
         return createTextResponse(
           `Build succeeded, but could not find simulator with UUID: ${simulatorUuid}`,
-          true
+          true,
         );
       }
 
@@ -274,14 +278,17 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
         log('info', `Booting simulator ${simulatorUuid}`);
         execSync(`xcrun simctl boot "${simulatorUuid}"`);
         // Wait a moment for the simulator to fully boot
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } else {
         log('info', `Simulator ${simulatorUuid} is already booted`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('error', `Error checking/booting simulator: ${errorMessage}`);
-      return createTextResponse(`Build succeeded, but error checking/booting simulator: ${errorMessage}`, true);
+      return createTextResponse(
+        `Build succeeded, but error checking/booting simulator: ${errorMessage}`,
+        true,
+      );
     }
 
     // --- Open Simulator UI Step ---
@@ -289,7 +296,7 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
       log('info', 'Opening Simulator app');
       execSync('open -a Simulator');
       // Give the Simulator app time to open
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('warning', `Warning: Could not open Simulator app: ${errorMessage}`);
@@ -301,34 +308,41 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
       log('info', `Installing app at path: ${appBundlePath} to simulator: ${simulatorUuid}`);
       execSync(`xcrun simctl install "${simulatorUuid}" "${appBundlePath}"`);
       // Wait a moment for installation to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('error', `Error installing app: ${errorMessage}`);
-      return createTextResponse(`Build succeeded, but error installing app on simulator: ${errorMessage}`, true);
+      return createTextResponse(
+        `Build succeeded, but error installing app on simulator: ${errorMessage}`,
+        true,
+      );
     }
 
     // --- Get Bundle ID Step ---
     let bundleId;
     try {
       log('info', `Extracting bundle ID from app: ${appBundlePath}`);
-      
+
       // Try PlistBuddy first (more reliable)
       try {
         bundleId = execSync(
           `/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "${appBundlePath}/Info.plist"`,
-        ).toString().trim();
+        )
+          .toString()
+          .trim();
       } catch (plistError: unknown) {
         // Fallback to defaults if PlistBuddy fails
         const errorMessage = plistError instanceof Error ? plistError.message : String(plistError);
         log('warning', `PlistBuddy failed, trying defaults: ${errorMessage}`);
-        bundleId = execSync(`defaults read "${appBundlePath}/Info" CFBundleIdentifier`).toString().trim();
+        bundleId = execSync(`defaults read "${appBundlePath}/Info" CFBundleIdentifier`)
+          .toString()
+          .trim();
       }
-      
+
       if (!bundleId) {
         throw new Error('Could not extract bundle ID from Info.plist');
       }
-      
+
       log('info', `Bundle ID for run: ${bundleId}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -354,11 +368,11 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
 
     // --- Success ---
     log('info', '✅ iOS simulator build & run succeeded.');
-    
+
     const target = params.simulatorId
       ? `simulator UUID ${params.simulatorId}`
       : `simulator name '${params.simulatorName}'`;
-      
+
     return {
       content: [
         {
@@ -366,7 +380,7 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
           text: `✅ iOS simulator build and run succeeded for scheme ${params.scheme} targeting ${target}.
           
 The app (${bundleId}) is now running in the iOS Simulator. 
-If you don't see the simulator window, it may be hidden behind other windows. The Simulator app should be open.`
+If you don't see the simulator window, it may be hidden behind other windows. The Simulator app should be open.`,
         },
       ],
     };
@@ -392,7 +406,7 @@ export function registerIOSSimulatorBuildByNameWorkspaceTool(server: McpServer):
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_by_name_workspace',
@@ -410,20 +424,20 @@ export function registerIOSSimulatorBuildByNameWorkspaceTool(server: McpServer):
       // Validate required parameters
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorNameValidation = validateRequiredParam('simulatorName', params.simulatorName);
       if (!simulatorNameValidation.isValid) return simulatorNameValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
 
@@ -440,7 +454,7 @@ export function registerIOSSimulatorBuildByNameProjectTool(server: McpServer): v
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_by_name_project',
@@ -458,20 +472,20 @@ export function registerIOSSimulatorBuildByNameProjectTool(server: McpServer): v
       // Validate required parameters
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
       if (!projectValidation.isValid) return projectValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorNameValidation = validateRequiredParam('simulatorName', params.simulatorName);
       if (!simulatorNameValidation.isValid) return simulatorNameValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
 
@@ -488,7 +502,7 @@ export function registerIOSSimulatorBuildByIdWorkspaceTool(server: McpServer): v
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_by_id_workspace',
@@ -506,20 +520,20 @@ export function registerIOSSimulatorBuildByIdWorkspaceTool(server: McpServer): v
       // Validate required parameters
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorIdValidation = validateRequiredParam('simulatorId', params.simulatorId);
       if (!simulatorIdValidation.isValid) return simulatorIdValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true, // May be ignored by xcodebuild
       });
-    }
+    },
   );
 }
 
@@ -536,7 +550,7 @@ export function registerIOSSimulatorBuildByIdProjectTool(server: McpServer): voi
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_by_id_project',
@@ -554,20 +568,20 @@ export function registerIOSSimulatorBuildByIdProjectTool(server: McpServer): voi
       // Validate required parameters
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
       if (!projectValidation.isValid) return projectValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorIdValidation = validateRequiredParam('simulatorId', params.simulatorId);
       if (!simulatorIdValidation.isValid) return simulatorIdValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true, // May be ignored by xcodebuild
       });
-    }
+    },
   );
 }
 
@@ -584,7 +598,7 @@ export function registerIOSSimulatorBuildAndRunByNameWorkspaceTool(server: McpSe
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_and_run_by_name_workspace',
@@ -602,20 +616,20 @@ export function registerIOSSimulatorBuildAndRunByNameWorkspaceTool(server: McpSe
       // Validate required parameters
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorNameValidation = validateRequiredParam('simulatorName', params.simulatorName);
       if (!simulatorNameValidation.isValid) return simulatorNameValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildAndRunLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
 
@@ -632,7 +646,7 @@ export function registerIOSSimulatorBuildAndRunByNameProjectTool(server: McpServ
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_and_run_by_name_project',
@@ -650,20 +664,20 @@ export function registerIOSSimulatorBuildAndRunByNameProjectTool(server: McpServ
       // Validate required parameters
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
       if (!projectValidation.isValid) return projectValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorNameValidation = validateRequiredParam('simulatorName', params.simulatorName);
       if (!simulatorNameValidation.isValid) return simulatorNameValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildAndRunLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
 
@@ -680,7 +694,7 @@ export function registerIOSSimulatorBuildAndRunByIdWorkspaceTool(server: McpServ
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_and_run_by_id_workspace',
@@ -698,20 +712,20 @@ export function registerIOSSimulatorBuildAndRunByIdWorkspaceTool(server: McpServ
       // Validate required parameters
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorIdValidation = validateRequiredParam('simulatorId', params.simulatorId);
       if (!simulatorIdValidation.isValid) return simulatorIdValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildAndRunLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true, // May be ignored
       });
-    }
+    },
   );
 }
 
@@ -728,7 +742,7 @@ export function registerIOSSimulatorBuildAndRunByIdProjectTool(server: McpServer
     extraArgs?: string[];
     useLatestOS?: boolean;
   };
-  
+
   registerTool<Params>(
     server,
     'ios_simulator_build_and_run_by_id_project',
@@ -746,20 +760,20 @@ export function registerIOSSimulatorBuildAndRunByIdProjectTool(server: McpServer
       // Validate required parameters
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
       if (!projectValidation.isValid) return projectValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       const simulatorIdValidation = validateRequiredParam('simulatorId', params.simulatorId);
       if (!simulatorIdValidation.isValid) return simulatorIdValidation.errorResponse!;
-      
+
       // Provide defaults
       return _handleIOSSimulatorBuildAndRunLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true, // May be ignored
       });
-    }
+    },
   );
 }
 

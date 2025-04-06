@@ -54,8 +54,7 @@ async function _handleCleanLogic(params: {
     else if (params.projectPath) successMessage += ` In project '${params.projectPath}'.`;
     else successMessage += ' In current directory project/workspace.'; // If neither provided
 
-     successMessage += `\nOutput:\n${String(result.output)}`; // Include output
-
+    successMessage += `\nOutput:\n${String(result.output)}`; // Include output
 
     const responseContent: ToolResponseContent[] = [
       ...warningMessages, // Keep potential warnings from addXcodeParameters if any arise later

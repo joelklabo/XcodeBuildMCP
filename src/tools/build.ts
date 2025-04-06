@@ -12,9 +12,7 @@ import {
   constructDestinationString,
   XcodeParams,
 } from '../utils/xcode.js';
-import {
-  createTextResponse,
-} from '../utils/validation.js';
+import { createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import { execSync } from 'child_process';
 
@@ -579,7 +577,7 @@ async function _handleListSchemesLogic(params: {
       if (schemesSection && line.trim().length > 0) {
         // Check if we've hit the next section (e.g., Configurations)
         if (line.match(/^[A-Za-z]+:/)) {
-            break; // Stop parsing schemes if a new section header is found
+          break; // Stop parsing schemes if a new section header is found
         }
         schemes.push(line.trim());
       } else if (schemesSection && line.trim().length === 0) {
@@ -588,25 +586,27 @@ async function _handleListSchemesLogic(params: {
       }
     }
 
-
     let responseText = `Available schemes:\n`;
     if (schemes.length > 0) {
       for (const scheme of schemes) {
         responseText += `- ${scheme}\n`;
       }
     } else {
-        responseText = "No schemes found. Output:\n" + result.output;
+      responseText = 'No schemes found. Output:\n' + result.output;
     }
 
     // Determine tool names based on path provided
     const buildToolName = params.workspacePath ? 'macos_build_workspace' : 'macos_build_project';
-    const buildSettingsToolName = params.workspacePath ? 'show_build_settings_workspace' : 'show_build_settings_project';
-    const pathArg = params.workspacePath ? `workspacePath: "${params.workspacePath}"` : `projectPath: "${params.projectPath}"`;
+    const buildSettingsToolName = params.workspacePath
+      ? 'show_build_settings_workspace'
+      : 'show_build_settings_project';
+    const pathArg = params.workspacePath
+      ? `workspacePath: "${params.workspacePath}"`
+      : `projectPath: "${params.projectPath}"`;
 
-     responseText += `\nNext Steps (Example with first scheme '${schemes[0] || 'YOUR_SCHEME'}'):
+    responseText += `\nNext Steps (Example with first scheme '${schemes[0] || 'YOUR_SCHEME'}'):
 1. Show build settings: ${buildSettingsToolName}({ ${pathArg}, scheme: "${schemes[0] || 'YOUR_SCHEME'}" })
 2. Build for macOS: ${buildToolName}({ ${pathArg}, scheme: "${schemes[0] || 'YOUR_SCHEME'}" })`;
-
 
     return {
       content: [
@@ -668,9 +668,9 @@ async function _handleMacOSBuildAndRunLogic(params: {
 
     // Extract path from the successful response text
     const responseText = appPathResponse.content?.[0]?.text as string;
-    const appPathMatch = responseText ? responseText.match(
-      /✅ App bundle path.*?:\s*(.*?)(?:\n|$)/
-    ) : null;
+    const appPathMatch = responseText
+      ? responseText.match(/✅ App bundle path.*?:\s*(.*?)(?:\n|$)/)
+      : null;
     if (!appPathMatch || !appPathMatch[1]) {
       return createTextResponse(
         `Build succeeded, but could not parse app path from settings output: ${appPathResponse.content[0].text}`,
@@ -694,7 +694,10 @@ async function _handleMacOSBuildAndRunLogic(params: {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('error', `Error launching macOS app: ${errorMessage}`);
-      return createTextResponse(`Build succeeded, but error launching macOS app: ${errorMessage}`, true);
+      return createTextResponse(
+        `Build succeeded, but error launching macOS app: ${errorMessage}`,
+        true,
+      );
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -795,14 +798,17 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        return createTextResponse(`Build succeeded, but error finding simulator: ${errorMessage}`, true);
+        return createTextResponse(
+          `Build succeeded, but error finding simulator: ${errorMessage}`,
+          true,
+        );
       }
     }
 
     if (!simulatorUuid) {
       return createTextResponse(
         'Build succeeded, but no simulator specified and failed to find a suitable one.',
-        true
+        true,
       );
     }
 
@@ -812,14 +818,14 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
       const simulatorStateOutput = execSync('xcrun simctl list devices').toString();
       const simulatorLine = simulatorStateOutput
         .split('\n')
-        .find(line => line.includes(simulatorUuid));
-      
+        .find((line) => line.includes(simulatorUuid));
+
       const isBooted = simulatorLine ? simulatorLine.includes('(Booted)') : false;
 
       if (!simulatorLine) {
         return createTextResponse(
           `Build succeeded, but could not find simulator with UUID: ${simulatorUuid}`,
-          true
+          true,
         );
       }
 
@@ -827,14 +833,17 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
         log('info', `Booting simulator ${simulatorUuid}`);
         execSync(`xcrun simctl boot "${simulatorUuid}"`);
         // Wait a moment for the simulator to fully boot
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } else {
         log('info', `Simulator ${simulatorUuid} is already booted`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('error', `Error checking/booting simulator: ${errorMessage}`);
-      return createTextResponse(`Build succeeded, but error checking/booting simulator: ${errorMessage}`, true);
+      return createTextResponse(
+        `Build succeeded, but error checking/booting simulator: ${errorMessage}`,
+        true,
+      );
     }
 
     // --- Open Simulator UI Step ---
@@ -842,7 +851,7 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
       log('info', 'Opening Simulator app');
       execSync('open -a Simulator');
       // Give the Simulator app time to open
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('warning', `Warning: Could not open Simulator app: ${errorMessage}`);
@@ -854,34 +863,41 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
       log('info', `Installing app at path: ${appBundlePath} to simulator: ${simulatorUuid}`);
       execSync(`xcrun simctl install "${simulatorUuid}" "${appBundlePath}"`);
       // Wait a moment for installation to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('error', `Error installing app: ${errorMessage}`);
-      return createTextResponse(`Build succeeded, but error installing app on simulator: ${errorMessage}`, true);
+      return createTextResponse(
+        `Build succeeded, but error installing app on simulator: ${errorMessage}`,
+        true,
+      );
     }
 
     // --- Get Bundle ID Step ---
     let bundleId;
     try {
       log('info', `Extracting bundle ID from app: ${appBundlePath}`);
-      
+
       // Try PlistBuddy first (more reliable)
       try {
         bundleId = execSync(
           `/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "${appBundlePath}/Info.plist"`,
-        ).toString().trim();
+        )
+          .toString()
+          .trim();
       } catch (plistError: unknown) {
         // Fallback to defaults if PlistBuddy fails
         const errorMessage = plistError instanceof Error ? plistError.message : String(plistError);
         log('warning', `PlistBuddy failed, trying defaults: ${errorMessage}`);
-        bundleId = execSync(`defaults read "${appBundlePath}/Info" CFBundleIdentifier`).toString().trim();
+        bundleId = execSync(`defaults read "${appBundlePath}/Info" CFBundleIdentifier`)
+          .toString()
+          .trim();
       }
-      
+
       if (!bundleId) {
         throw new Error('Could not extract bundle ID from Info.plist');
       }
-      
+
       log('info', `Bundle ID for run: ${bundleId}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -914,7 +930,7 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
           text: `✅ iOS simulator build and run succeeded for scheme ${params.scheme} targeting simulator ${params.simulatorName || simulatorUuid}.
           
 The app (${bundleId}) is now running in the iOS Simulator. 
-If you don't see the simulator window, it may be hidden behind other windows. The Simulator app should be open.`
+If you don't see the simulator window, it may be hidden behind other windows. The Simulator app should be open.`,
         },
       ],
     };

@@ -8,23 +8,19 @@
 // Import server components
 import { createServer, startServer } from './server/server.js';
 
-// Import tools from refactored modules
-// macOS build tools
-import {
-  registerMacOSBuildTools,
-  registerMacOSBuildAndRunTools,
-} from './tools/build_macos.js';
+// Import macOS build tools
+import { registerMacOSBuildTools, registerMacOSBuildAndRunTools } from './tools/build_macos.js';
 
-// iOS simulator build tools
+// Import iOS simulator build tools
 import {
   registerIOSSimulatorBuildTools,
   registerIOSSimulatorBuildAndRunTools,
 } from './tools/build_ios_simulator.js';
 
-// iOS device build tools
+// Import iOS device build tools
 import { registerIOSDeviceBuildTools } from './tools/build_ios_device.js';
 
-// App path tools
+// Import app path tools
 import {
   registerGetMacOSAppPathWorkspaceTool,
   registerGetMacOSAppPathProjectTool,
@@ -36,7 +32,7 @@ import {
   registerGetSimulatorAppPathByIdProjectTool,
 } from './tools/app_path.js';
 
-// Build settings and scheme tools
+// Import build settings and scheme tools
 import {
   registerShowBuildSettingsWorkspaceTool,
   registerShowBuildSettingsProjectTool,
@@ -44,7 +40,7 @@ import {
   registerListSchemesProjectTool,
 } from './tools/build_settings.js';
 
-// Simulator tools
+// Import simulator tools
 import {
   registerListSimulatorsTool,
   registerBootSimulatorTool,
@@ -53,13 +49,13 @@ import {
   registerLaunchAppInSimulatorTool,
 } from './tools/simulator.js';
 
-// Bundle ID tools
+// Import bundle ID tools
 import { registerGetMacOSBundleIdTool, registerGetiOSBundleIdTool } from './tools/bundleId.js';
 
-// Clean tool - Import new split tools
+// Import clean tool
 import { registerCleanWorkspaceTool, registerCleanProjectTool } from './tools/clean.js';
 
-// Launch tools
+// Import launch tools
 import { registerLaunchMacOSAppTool } from './tools/launch.js';
 
 // Import utilities
@@ -73,27 +69,25 @@ async function main(): Promise<void> {
     // Create the server
     const server = createServer();
 
-    // Register tools in a logical order, using the new split functions
-
-    // 1. List/Discovery tools first
+    // Register List/Discovery tools first
     registerListSchemesWorkspaceTool(server);
     registerListSchemesProjectTool(server);
     registerListSimulatorsTool(server);
 
-    // 2. Clean tool
+    // Register Clean tools
     registerCleanWorkspaceTool(server);
     registerCleanProjectTool(server);
 
-    // 3. Build tools
+    // Register Build tools
     registerMacOSBuildTools(server);
     registerIOSSimulatorBuildTools(server);
     registerIOSDeviceBuildTools(server);
 
-    // 4. Build settings tool
+    // Register Build settings tools
     registerShowBuildSettingsWorkspaceTool(server);
     registerShowBuildSettingsProjectTool(server);
 
-    // 5. App path tools (after build)
+    // Register App path tools
     registerGetMacOSAppPathWorkspaceTool(server);
     registerGetMacOSAppPathProjectTool(server);
     registerGetiOSDeviceAppPathWorkspaceTool(server);
@@ -103,22 +97,22 @@ async function main(): Promise<void> {
     registerGetSimulatorAppPathByIdWorkspaceTool(server);
     registerGetSimulatorAppPathByIdProjectTool(server);
 
-    // 6. Simulator management tools
+    // Register Simulator management tools
     registerBootSimulatorTool(server);
     registerOpenSimulatorTool(server);
 
-    // 7. App installation and launch tools
+    // Register App installation and launch tools
     registerInstallAppInSimulatorTool(server);
     registerLaunchAppInSimulatorTool(server);
 
-    // 8. Bundle ID tools
+    // Register Bundle ID tools
     registerGetMacOSBundleIdTool(server);
     registerGetiOSBundleIdTool(server);
 
-    // 9. Launch tools
+    // Register Launch tools
     registerLaunchMacOSAppTool(server);
 
-    // 10. Build and run tools
+    // Register build and run tools
     registerMacOSBuildAndRunTools(server);
     registerIOSSimulatorBuildAndRunTools(server);
 

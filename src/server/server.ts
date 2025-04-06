@@ -27,7 +27,7 @@ export function createServer(): McpServer {
 
   // Log server initialization
   log('info', `Server initialized (version ${version})`);
-  
+
   // Initialize the progress service with the server instance
   initProgressService(server);
 

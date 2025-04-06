@@ -44,7 +44,6 @@ export interface XcodeParams {
   [key: string]: unknown; // Allow other properties if needed
 }
 
-
 import { v4 as uuidv4 } from 'uuid';
 import { ToolProgressUpdate } from '../types/common.js';
 
@@ -63,15 +62,16 @@ export type ProgressCallback = (update: ToolProgressUpdate) => void;
 export async function executeXcodeCommand(
   command: string[],
   logPrefix: string,
-  progressCallback?: ProgressCallback
+  progressCallback?: ProgressCallback,
 ): Promise<XcodeCommandResponse> {
   // Properly escape arguments for shell
   const escapedCommand = command.map((arg) => {
     // If the argument contains spaces or special characters, wrap it in quotes
     // Ensure existing quotes are escaped
-    if (/[\s,"'=]/.test(arg) && !/^".*"$/.test(arg)) { // Check if needs quoting and isn't already quoted
-        return `"${arg.replace(/(["\\])/g, '\\$1')}"`; // Escape existing quotes and backslashes
-      }
+    if (/[\s,"'=]/.test(arg) && !/^".*"$/.test(arg)) {
+      // Check if needs quoting and isn't already quoted
+      return `"${arg.replace(/(["\\])/g, '\\$1')}"`; // Escape existing quotes and backslashes
+    }
     return arg;
   });
 
@@ -81,12 +81,12 @@ export async function executeXcodeCommand(
 
   // Create unique operation ID for this command execution
   const operationId = uuidv4();
-  
+
   // Set up progress tracking
   let lastProgressUpdate = 0;
   const progressUpdateInterval = 1000; // Update interval in ms
-  let lastProgressMessage = '';
-  
+  let _lastProgressMessage = '';
+
   // Initial progress update if callback provided
   if (progressCallback) {
     progressCallback({
@@ -108,7 +108,7 @@ export async function executeXcodeCommand(
 
     let stdout = '';
     let stderr = '';
-    
+
     // Track build phase and progress heuristics
     let currentPhase = '';
     const buildPhases = ['CompileC', 'CompileSwift', 'Linking', 'CodeSign'];
@@ -117,20 +117,20 @@ export async function executeXcodeCommand(
     let estimatedProgress = 0;
 
     // Function to send progress updates
-    const sendProgressUpdate = (message: string, forceSend = false) => {
+    const sendProgressUpdate = (message: string, forceSend = false): void => {
       const now = Date.now();
       // Only send updates if forced or after interval has passed
       if (progressCallback && (forceSend || now - lastProgressUpdate > progressUpdateInterval)) {
         lastProgressUpdate = now;
-        lastProgressMessage = message;
-        
+        _lastProgressMessage = message;
+
         progressCallback({
           operationId,
           status: 'running',
           progress: estimatedProgress,
           message,
           timestamp: new Date().toISOString(),
-          details: `Phase: ${currentPhase || 'Preparing'}`
+          details: `Phase: ${currentPhase || 'Preparing'}`,
         });
       }
     };
@@ -138,12 +138,12 @@ export async function executeXcodeCommand(
     process.stdout.on('data', (data) => {
       const chunk = data.toString();
       stdout += chunk;
-      
+
       // Progress reporting based on output analysis
       if (progressCallback) {
         // Look for common xcodebuild output patterns to estimate progress
         const lines = chunk.split('\n');
-        
+
         for (const line of lines) {
           // Detect compilation phase
           for (const phase of buildPhases) {
@@ -156,22 +156,25 @@ export async function executeXcodeCommand(
                 estimatedProgress = Math.min(Math.floor(25 * phaseIndex), 90);
                 sendProgressUpdate(`${phase} phase...`, true);
               }
-              
+
               // Count files for compilation phases
               if (phase === 'CompileC' || phase === 'CompileSwift') {
                 processedFiles++;
                 if (totalFiles > 0) {
                   // Adjust progress within the phase
-                  const phaseProgress = Math.min(Math.floor((processedFiles / totalFiles) * 100), 100);
+                  const phaseProgress = Math.min(
+                    Math.floor((processedFiles / totalFiles) * 100),
+                    100,
+                  );
                   estimatedProgress = Math.min(estimatedProgress + phaseProgress / 4, 95);
                 }
               }
-              
+
               sendProgressUpdate(`Processing: ${line.substring(0, 80)}...`);
               break;
             }
           }
-          
+
           // Look for "x of y files" patterns
           const fileCountMatch = line.match(/(\d+) of (\d+) files/);
           if (fileCountMatch && fileCountMatch.length >= 3) {
@@ -192,7 +195,7 @@ export async function executeXcodeCommand(
       stderr += chunk;
       // Log stderr chunks immediately
       log('warning', `stderr chunk: ${chunk.trim()}`);
-      
+
       // Send error info in progress updates
       if (progressCallback) {
         sendProgressUpdate(`Warning: ${chunk.substring(0, 100)}...`, true);
@@ -210,11 +213,11 @@ export async function executeXcodeCommand(
           operationId,
           status: success ? 'completed' : 'failed',
           progress: success ? 100 : estimatedProgress,
-          message: success 
-            ? `${logPrefix} completed successfully` 
+          message: success
+            ? `${logPrefix} completed successfully`
             : `${logPrefix} failed with exit code ${exitCode}`,
           timestamp: new Date().toISOString(),
-          details: success ? undefined : stderr.substring(0, 500)
+          details: success ? undefined : stderr.substring(0, 500),
         });
       }
 
@@ -235,24 +238,24 @@ export async function executeXcodeCommand(
     });
 
     process.on('error', (err) => {
-        log('error', `${logPrefix} failed to start process: ${err.message}`);
-        
-        // Process error progress update
-        if (progressCallback) {
-          progressCallback({
-            operationId,
-            status: 'failed',
-            progress: 0,
-            message: `Failed to start ${logPrefix} process: ${err.message}`,
-            timestamp: new Date().toISOString()
-          });
-        }
-        
-        resolve({
-            success: false,
-            output: stdout,
-            error: `Failed to start process: ${err.message}`,
+      log('error', `${logPrefix} failed to start process: ${err.message}`);
+
+      // Process error progress update
+      if (progressCallback) {
+        progressCallback({
+          operationId,
+          status: 'failed',
+          progress: 0,
+          message: `Failed to start ${logPrefix} process: ${err.message}`,
+          timestamp: new Date().toISOString(),
         });
+      }
+
+      resolve({
+        success: false,
+        output: stdout,
+        error: `Failed to start process: ${err.message}`,
+      });
     });
   });
 }
@@ -269,14 +272,14 @@ export function addXcodeParameters(
   if (params.workspacePath) {
     command.push('-workspace', params.workspacePath);
     log('info', `${logPrefix}: Using workspace ${params.workspacePath}`);
-  } else if (params.projectPath) { // Use else if to avoid adding both if provided
+  } else if (params.projectPath) {
+    // Use else if to avoid adding both if provided
     command.push('-project', params.projectPath);
     log('info', `${logPrefix}: Using project ${params.projectPath}`);
   } else {
     // Only log warning if neither is provided, as some tools might work implicitly
     log('info', `${logPrefix}: No workspace or project path specified, using implicit.`);
   }
-
 
   if (params.scheme) {
     command.push('-scheme', params.scheme);
@@ -295,8 +298,8 @@ export function addXcodeParameters(
 
   // Handle destination construction - prioritize explicit destination if provided
   if (params.destination) {
-      command.push('-destination', params.destination);
-      log('info', `${logPrefix}: Using explicit destination ${params.destination}`);
+    command.push('-destination', params.destination);
+    log('info', `${logPrefix}: Using explicit destination ${params.destination}`);
   } else if (params.platform) {
     try {
       const destination = constructDestinationString(
@@ -312,7 +315,10 @@ export function addXcodeParameters(
       const errorMessage = error instanceof Error ? error.message : String(error);
       log('error', `${logPrefix}: Error constructing destination: ${errorMessage}`);
       // Don't add a destination if construction fails, let xcodebuild use defaults or fail
-       log('warning', `${logPrefix}: Proceeding without explicit -destination parameter due to error.`);
+      log(
+        'warning',
+        `${logPrefix}: Proceeding without explicit -destination parameter due to error.`,
+      );
     }
   }
 
@@ -321,7 +327,6 @@ export function addXcodeParameters(
     log('info', `${logPrefix}: Adding extra arguments: ${params.extraArgs.join(' ')}`);
   }
 }
-
 
 /**
  * Constructs a destination string for xcodebuild from platform and simulator parameters
@@ -355,14 +360,16 @@ export function constructDestinationString(
   }
 
   // If it's a simulator platform but neither ID nor name is provided (should be prevented by callers now)
-   if (isSimulatorPlatform && !simulatorId && !simulatorName) {
-     // Throw error as specific simulator is needed unless it's a generic build action
-     // Allow fallback for generic simulator builds if needed, but generally require specifics for build/run
-     log('warning', `Constructing generic destination for ${platform} without name or ID. This might not be specific enough.`);
-     // Example: return `platform=${platform},name=Any ${platform} Device`; // Or similar generic target
-     throw new Error(`Simulator name or ID is required for specific ${platform} operations`);
-   }
-
+  if (isSimulatorPlatform && !simulatorId && !simulatorName) {
+    // Throw error as specific simulator is needed unless it's a generic build action
+    // Allow fallback for generic simulator builds if needed, but generally require specifics for build/run
+    log(
+      'warning',
+      `Constructing generic destination for ${platform} without name or ID. This might not be specific enough.`,
+    );
+    // Example: return `platform=${platform},name=Any ${platform} Device`; // Or similar generic target
+    throw new Error(`Simulator name or ID is required for specific ${platform} operations`);
+  }
 
   // Handle non-simulator platforms
   switch (platform) {
@@ -380,7 +387,7 @@ export function constructDestinationString(
     // default:
     //   throw new Error(`Unsupported platform for destination string: ${platform}`);
   }
-    // Fallback just in case (shouldn't be reached with enum)
-    log('error', `Reached unexpected point in constructDestinationString for platform: ${platform}`);
-    return `platform=${platform}`;
+  // Fallback just in case (shouldn't be reached with enum)
+  log('error', `Reached unexpected point in constructDestinationString for platform: ${platform}`);
+  return `platform=${platform}`;
 }

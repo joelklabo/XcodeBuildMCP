@@ -4,15 +4,8 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
-import {
-  executeXcodeCommand,
-  XcodePlatform,
-  constructDestinationString,
-} from '../utils/xcode.js';
-import {
-  validateRequiredParam,
-  createTextResponse,
-} from '../utils/validation.js';
+import { executeXcodeCommand, XcodePlatform, constructDestinationString } from '../utils/xcode.js';
+import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import {
   registerTool,
@@ -54,7 +47,7 @@ async function _handleGetAppPathLogic(params: {
       command.push('-workspace', params.workspacePath);
     } else if (params.projectPath) {
       command.push('-project', params.projectPath);
-    } 
+    }
 
     command.push('-scheme', params.scheme);
     command.push('-configuration', params.configuration);
@@ -69,26 +62,26 @@ async function _handleGetAppPathLogic(params: {
         destinationString = constructDestinationString(
           XcodePlatform.iOSSimulator,
           undefined,
-          params.simulatorId
+          params.simulatorId,
         );
       } else if (params.simulatorName) {
         destinationString = constructDestinationString(
           XcodePlatform.iOSSimulator,
           params.simulatorName,
           undefined,
-          params.useLatestOS
+          params.useLatestOS,
         );
       } else {
         return createTextResponse(
           'For iOS Simulator platform, either simulatorId or simulatorName must be provided',
-          true
+          true,
         );
       }
     } else {
       // Handle other platform types
       try {
         destinationString = constructDestinationString(params.platform);
-      } catch (error) {
+      } catch {
         return createTextResponse(`Unsupported platform: ${params.platform}`, true);
       }
     }
@@ -108,7 +101,7 @@ async function _handleGetAppPathLogic(params: {
     if (!builtProductsDirMatch || !fullProductNameMatch) {
       return createTextResponse(
         'Failed to extract app path from build settings. Make sure the app has been built first.',
-        true
+        true,
       );
     }
 
@@ -171,17 +164,17 @@ export function registerGetMacOSAppPathWorkspaceTool(server: McpServer): void {
     async (params: Params) => {
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         platform: XcodePlatform.macOS,
-        useLatestOS: true, 
+        useLatestOS: true,
       });
-    }
+    },
   );
 }
 
@@ -205,14 +198,14 @@ export function registerGetMacOSAppPathProjectTool(server: McpServer): void {
 
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         platform: XcodePlatform.macOS,
-        useLatestOS: true, 
+        useLatestOS: true,
       });
-    }
+    },
   );
 }
 
@@ -233,17 +226,17 @@ export function registerGetiOSDeviceAppPathWorkspaceTool(server: McpServer): voi
     async (params: Params) => {
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         platform: XcodePlatform.iOS,
-        useLatestOS: true, 
+        useLatestOS: true,
       });
-    }
+    },
   );
 }
 
@@ -267,14 +260,14 @@ export function registerGetiOSDeviceAppPathProjectTool(server: McpServer): void 
 
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         platform: XcodePlatform.iOS,
-        useLatestOS: true, 
+        useLatestOS: true,
       });
-    }
+    },
   );
 }
 
@@ -298,7 +291,7 @@ export function registerGetSimulatorAppPathByNameWorkspaceTool(server: McpServer
     async (params: Params) => {
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
 
@@ -307,13 +300,13 @@ export function registerGetSimulatorAppPathByNameWorkspaceTool(server: McpServer
 
       const simulatorNameValidation = validateRequiredParam('simulatorName', params.simulatorName);
       if (!simulatorNameValidation.isValid) return simulatorNameValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
 
@@ -332,7 +325,7 @@ export function registerGetSimulatorAppPathByNameProjectTool(server: McpServer):
       platform: platformSimulatorSchema,
       simulatorName: simulatorNameSchema,
       configuration: configurationSchema,
-      useLatestOS: useLatestOSSchema, 
+      useLatestOS: useLatestOSSchema,
     },
     async (params: Params) => {
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
@@ -346,13 +339,13 @@ export function registerGetSimulatorAppPathByNameProjectTool(server: McpServer):
 
       const simulatorNameValidation = validateRequiredParam('simulatorName', params.simulatorName);
       if (!simulatorNameValidation.isValid) return simulatorNameValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
 
@@ -376,7 +369,7 @@ export function registerGetSimulatorAppPathByIdWorkspaceTool(server: McpServer):
     async (params: Params) => {
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
       if (!workspaceValidation.isValid) return workspaceValidation.errorResponse!;
-      
+
       const schemeValidation = validateRequiredParam('scheme', params.scheme);
       if (!schemeValidation.isValid) return schemeValidation.errorResponse!;
 
@@ -385,13 +378,13 @@ export function registerGetSimulatorAppPathByIdWorkspaceTool(server: McpServer):
 
       const simulatorIdValidation = validateRequiredParam('simulatorId', params.simulatorId);
       if (!simulatorIdValidation.isValid) return simulatorIdValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
 
@@ -410,7 +403,7 @@ export function registerGetSimulatorAppPathByIdProjectTool(server: McpServer): v
       platform: platformSimulatorSchema,
       simulatorId: simulatorIdSchema,
       configuration: configurationSchema,
-      useLatestOS: useLatestOSSchema, 
+      useLatestOS: useLatestOSSchema,
     },
     async (params: Params) => {
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
@@ -424,12 +417,12 @@ export function registerGetSimulatorAppPathByIdProjectTool(server: McpServer): v
 
       const simulatorIdValidation = validateRequiredParam('simulatorId', params.simulatorId);
       if (!simulatorIdValidation.isValid) return simulatorIdValidation.errorResponse!;
-      
+
       return _handleGetAppPathLogic({
         ...params,
         configuration: params.configuration ?? 'Debug',
         useLatestOS: params.useLatestOS ?? true,
       });
-    }
+    },
   );
 }
