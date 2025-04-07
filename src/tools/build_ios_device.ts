@@ -55,6 +55,7 @@ export function registerIOSDeviceBuildWorkspaceTool(server: McpServer): void {
           platform: XcodePlatform.iOS,
           logPrefix: 'iOS Device Build',
         },
+        'build',
       );
     },
   );
@@ -92,6 +93,7 @@ export function registerIOSDeviceBuildProjectTool(server: McpServer): void {
           platform: XcodePlatform.iOS,
           logPrefix: 'iOS Device Build',
         },
+        'build',
       );
     },
   );

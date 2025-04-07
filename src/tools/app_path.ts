@@ -4,9 +4,9 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
-import { executeXcodeCommand, constructDestinationString } from '../utils/xcode.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse, XcodePlatform } from '../types/common.js';
+import { executeXcodeBuild } from '../utils/build-utils.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -41,62 +41,43 @@ async function _handleGetAppPathLogic(params: {
   log('info', `Getting app path for scheme ${params.scheme} on platform ${params.platform}`);
 
   try {
-    const command = ['xcodebuild'];
+    // Use executeXcodeBuild with 'showBuildSettings' action for consistent error handling
+    const result = await executeXcodeBuild(
+      {
+        ...params,
+      },
+      {
+        platform: params.platform,
+        simulatorName: params.simulatorName,
+        simulatorId: params.simulatorId,
+        useLatestOS: params.useLatestOS,
+        logPrefix: 'Get App Path',
+      },
+      'showBuildSettings',
+    );
 
-    if (params.workspacePath) {
-      command.push('-workspace', params.workspacePath);
-    } else if (params.projectPath) {
-      command.push('-project', params.projectPath);
+    // If executeXcodeBuild returned an error, just return it
+    if (result.isError) {
+      return result;
     }
 
-    command.push('-scheme', params.scheme);
-    command.push('-configuration', params.configuration);
-
-    let destinationString: string;
-    if (params.platform === XcodePlatform.macOS) {
-      destinationString = 'platform=macOS';
-    } else if (params.platform === XcodePlatform.iOS) {
-      destinationString = 'generic/platform=iOS';
-    } else if (params.platform === XcodePlatform.iOSSimulator) {
-      if (params.simulatorId) {
-        destinationString = constructDestinationString(
-          XcodePlatform.iOSSimulator,
-          undefined,
-          params.simulatorId,
-        );
-      } else if (params.simulatorName) {
-        destinationString = constructDestinationString(
-          XcodePlatform.iOSSimulator,
-          params.simulatorName,
-          undefined,
-          params.useLatestOS,
-        );
-      } else {
-        return createTextResponse(
-          'For iOS Simulator platform, either simulatorId or simulatorName must be provided',
-          true,
-        );
-      }
-    } else {
-      // Handle other platform types
-      try {
-        destinationString = constructDestinationString(params.platform);
-      } catch {
-        return createTextResponse(`Unsupported platform: ${params.platform}`, true);
+    // Extract the build settings output from the result
+    let buildSettingsOutput = '';
+    if (result.content) {
+      for (const item of result.content) {
+        if (item.type === 'text' && !item.text.includes('✅') && !item.text.includes('⚠️')) {
+          buildSettingsOutput = item.text;
+          break;
+        }
       }
     }
 
-    command.push('-destination', destinationString);
-    command.push('-showBuildSettings');
-
-    const result = await executeXcodeCommand(command, 'Show Build Settings');
-
-    if (!result.success) {
-      return createTextResponse(`Failed to get build settings: ${result.error}`, true);
+    if (!buildSettingsOutput) {
+      return createTextResponse('Failed to extract build settings output from the result.', true);
     }
 
-    const builtProductsDirMatch = result.output.match(/BUILT_PRODUCTS_DIR = (.+)$/m);
-    const fullProductNameMatch = result.output.match(/FULL_PRODUCT_NAME = (.+)$/m);
+    const builtProductsDirMatch = buildSettingsOutput.match(/BUILT_PRODUCTS_DIR = (.+)$/m);
+    const fullProductNameMatch = buildSettingsOutput.match(/FULL_PRODUCT_NAME = (.+)$/m);
 
     if (!builtProductsDirMatch || !fullProductNameMatch) {
       return createTextResponse(
@@ -129,11 +110,11 @@ async function _handleGetAppPathLogic(params: {
     return {
       content: [
         {
-          type: 'text' as const,
+          type: 'text',
           text: `✅ App path retrieved successfully: ${appPath}`,
         },
         {
-          type: 'text' as const,
+          type: 'text',
           text: nextStepsText,
         },
       ],

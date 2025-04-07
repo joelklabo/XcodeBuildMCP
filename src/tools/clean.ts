@@ -5,8 +5,9 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
-import { executeXcodeCommand, addXcodeParameters, XcodeParams } from '../utils/xcode.js';
-import { ToolResponse, ToolResponseContent } from '../types/common.js';
+import { XcodePlatform } from '../utils/xcode.js';
+import { ToolResponse } from '../types/common.js';
+import { executeXcodeBuild } from '../utils/build-utils.js';
 
 // --- Private Helper Function ---
 
@@ -21,65 +22,21 @@ async function _handleCleanLogic(params: {
   derivedDataPath?: string;
   extraArgs?: string[];
 }): Promise<ToolResponse> {
-  const warningMessages: ToolResponseContent[] = [];
-  // Initial path check removed, assume one path is present or none (for implicit)
-
   log('info', 'Starting xcodebuild clean request (internal)');
 
-  try {
-    const command = ['xcodebuild', 'clean'];
-    // Use XcodeParams type for clarity when calling addXcodeParameters
-    const xcodeParams: XcodeParams = { ...params };
-    addXcodeParameters(command, xcodeParams, 'Cleaning');
-
-    const result = await executeXcodeCommand(command, 'Clean');
-
-    if (!result.success) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Clean operation failed: ${String(result.error)}`,
-          },
-        ],
-        isError: true, // Mark as error
-      };
-    }
-
-    // Construct success message, including context if provided
-    let successMessage = '✅ Clean operation successful.';
-    if (params.scheme) successMessage += ` For scheme '${params.scheme}'.`;
-    if (params.configuration) successMessage += ` Configuration '${params.configuration}'.`;
-    if (params.workspacePath) successMessage += ` In workspace '${params.workspacePath}'.`;
-    else if (params.projectPath) successMessage += ` In project '${params.projectPath}'.`;
-    else successMessage += ' In current directory project/workspace.'; // If neither provided
-
-    successMessage += `\nOutput:\n${String(result.output)}`; // Include output
-
-    const responseContent: ToolResponseContent[] = [
-      ...warningMessages, // Keep potential warnings from addXcodeParameters if any arise later
-      {
-        type: 'text',
-        text: successMessage,
-      },
-    ];
-
-    return {
-      content: responseContent,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log('error', `Error during clean operation: ${errorMessage}`);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Clean operation failed: ${errorMessage}`,
-        },
-      ],
-      isError: true, // Mark as error
-    };
-  }
+  // For clean operations, we need to provide a default platform and configuration
+  return executeXcodeBuild(
+    {
+      ...params,
+      scheme: params.scheme || '', // Empty string if not provided
+      configuration: params.configuration || 'Debug', // Default to Debug if not provided
+    },
+    {
+      platform: XcodePlatform.macOS, // Default to macOS, but this doesn't matter much for clean
+      logPrefix: 'Clean',
+    },
+    'clean', // Specify 'clean' as the build action
+  );
 }
 
 // --- Public Tool Definitions ---

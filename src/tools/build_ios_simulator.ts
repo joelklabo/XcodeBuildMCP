@@ -4,9 +4,10 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
-import { executeXcodeCommand, XcodePlatform, constructDestinationString } from '../utils/xcode.js';
+import { XcodePlatform } from '../utils/xcode.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
+import { executeXcodeBuild } from '../utils/build-utils.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -37,97 +38,21 @@ async function _handleIOSSimulatorBuildLogic(params: {
   derivedDataPath?: string;
   extraArgs?: string[];
 }): Promise<ToolResponse> {
-  const warningMessages: { type: 'text'; text: string }[] = [];
-  const warningRegex = /\[warning\]: (.*)/g;
   log('info', `Starting iOS Simulator build for scheme ${params.scheme} (internal)`);
 
-  try {
-    const command = ['xcodebuild'];
-
-    if (params.workspacePath) {
-      command.push('-workspace', params.workspacePath);
-    } else if (params.projectPath) {
-      command.push('-project', params.projectPath);
-    } // No else needed, one path is guaranteed by callers
-
-    command.push('-scheme', params.scheme);
-    command.push('-configuration', params.configuration);
-
-    // Construct destination string based on simulator parameters
-    let destinationString: string;
-    if (params.simulatorId) {
-      destinationString = constructDestinationString(
-        XcodePlatform.iOSSimulator,
-        undefined,
-        params.simulatorId,
-      );
-    } else if (params.simulatorName) {
-      destinationString = constructDestinationString(
-        XcodePlatform.iOSSimulator,
-        params.simulatorName,
-        undefined,
-        params.useLatestOS,
-      );
-    } else {
-      // This should never happen due to validation in the public functions
-      return createTextResponse('Either simulatorId or simulatorName must be provided', true);
-    }
-
-    command.push('-destination', destinationString);
-
-    if (params.derivedDataPath) {
-      command.push('-derivedDataPath', params.derivedDataPath);
-    }
-
-    if (params.extraArgs) {
-      command.push(...params.extraArgs);
-    }
-
-    command.push('build');
-
-    const result = await executeXcodeCommand(command, 'iOS Simulator Build');
-
-    let match;
-    while ((match = warningRegex.exec(result.output)) !== null) {
-      warningMessages.push({ type: 'text', text: `⚠️ Warning: ${match[1]}` });
-    }
-
-    if (!result.success) {
-      log('error', `iOS simulator build failed: ${result.error}`);
-      const errorResponse = createTextResponse(
-        `❌ iOS simulator build failed. Error: ${result.error}`,
-        true,
-      );
-      if (warningMessages.length > 0 && errorResponse.content) {
-        errorResponse.content.unshift(...warningMessages);
-      }
-      return errorResponse;
-    }
-
-    log('info', '✅ iOS simulator build succeeded.');
-    const target = params.simulatorId
-      ? `simulator UUID ${params.simulatorId}`
-      : `simulator name '${params.simulatorName}'`;
-
-    const successResponse: ToolResponse = {
-      content: [
-        ...warningMessages,
-        {
-          type: 'text',
-          text: `✅ iOS simulator build succeeded for scheme ${params.scheme} targeting ${target}.`,
-        },
-        {
-          type: 'text',
-          text: `Next Steps:\n1. Get App Path: Use get_app_path_by_${params.simulatorId ? 'id' : 'name'}_...\n2. Install App: Use install_app_in_simulator\n3. Launch App: Use launch_app_in_simulator`,
-        },
-      ],
-    };
-    return successResponse;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log('error', `Error during iOS Simulator build: ${errorMessage}`);
-    return createTextResponse(`Error during iOS Simulator build: ${errorMessage}`, true);
-  }
+  return executeXcodeBuild(
+    {
+      ...params,
+    },
+    {
+      platform: XcodePlatform.iOSSimulator,
+      simulatorName: params.simulatorName,
+      simulatorId: params.simulatorId,
+      useLatestOS: params.useLatestOS,
+      logPrefix: 'iOS Simulator Build',
+    },
+    'build',
+  );
 }
 
 /**
@@ -155,52 +80,42 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
     }
 
     // --- Get App Path Step ---
-    const command = ['xcodebuild'];
+    // Use executeXcodeBuild for more consistent error handling
+    const appPathResult = await executeXcodeBuild(
+      {
+        ...params,
+      },
+      {
+        platform: XcodePlatform.iOSSimulator,
+        simulatorName: params.simulatorName,
+        simulatorId: params.simulatorId,
+        useLatestOS: params.useLatestOS ?? true,
+        logPrefix: 'Get App Path',
+      },
+      'showBuildSettings',
+    );
 
-    if (params.workspacePath) {
-      command.push('-workspace', params.workspacePath);
-    } else if (params.projectPath) {
-      command.push('-project', params.projectPath);
-    }
-
-    command.push('-scheme', params.scheme);
-    command.push('-configuration', params.configuration);
-
-    // Construct destination string based on simulator parameters
-    let destinationString: string;
-    if (params.simulatorId) {
-      destinationString = constructDestinationString(
-        XcodePlatform.iOSSimulator,
-        undefined,
-        params.simulatorId,
-      );
-    } else if (params.simulatorName) {
-      destinationString = constructDestinationString(
-        XcodePlatform.iOSSimulator,
-        params.simulatorName,
-        undefined,
-        params.useLatestOS,
-      );
-    } else {
-      // This should never happen due to validation in the public functions
-      return createTextResponse('Either simulatorId or simulatorName must be provided', true);
-    }
-
-    command.push('-destination', destinationString);
-    command.push('-showBuildSettings');
-
-    const result = await executeXcodeCommand(command, 'Get App Path');
-
-    if (!result.success) {
-      log('error', `Failed to get app path: ${result.error}`);
+    // If there was an error with the command execution, return it
+    if (appPathResult.isError) {
       return createTextResponse(
-        `Build succeeded, but failed to get app path: ${result.error}`,
+        `Build succeeded, but failed to get app path: ${appPathResult.content?.[0]?.text || 'Unknown error'}`,
         true,
       );
     }
 
+    // Extract build settings output
+    let buildSettingsOutput = '';
+    if (appPathResult.content) {
+      for (const item of appPathResult.content) {
+        if (item.type === 'text' && !item.text.includes('✅') && !item.text.includes('⚠️')) {
+          buildSettingsOutput = item.text;
+          break;
+        }
+      }
+    }
+
     // Extract CODESIGNING_FOLDER_PATH from build settings to get app path
-    const appPathMatch = result.output.match(/CODESIGNING_FOLDER_PATH = (.+\.app)/);
+    const appPathMatch = buildSettingsOutput.match(/CODESIGNING_FOLDER_PATH = (.+\.app)/);
     if (!appPathMatch || !appPathMatch[1]) {
       return createTextResponse(
         `Build succeeded, but could not find app path in build settings.`,

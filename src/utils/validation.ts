@@ -1,5 +1,23 @@
 /**
- * Validation utilities for parameter validation
+ * Validation Utilities - Input validation and error response generation
+ *
+ * This utility module provides a comprehensive set of validation functions to ensure
+ * that tool inputs meet expected requirements. It centralizes validation logic,
+ * error message formatting, and response generation for consistent error handling
+ * across the application.
+ *
+ * Responsibilities:
+ * - Validating required parameters (validateRequiredParam)
+ * - Checking parameters against allowed values (validateAllowedValues, validateEnumParam)
+ * - Verifying file existence (validateFileExists)
+ * - Validating logical conditions (validateCondition)
+ * - Ensuring at least one of multiple parameters is provided (validateAtLeastOneParam)
+ * - Creating standardized response objects for tools (createTextResponse)
+ *
+ * Using these validation utilities ensures consistent error messaging and helps
+ * provide clear feedback to users when their inputs don't meet requirements.
+ * The functions return ValidationResult objects that make it easy to chain
+ * validations and generate appropriate responses.
  */
 
 import * as fs from 'fs';

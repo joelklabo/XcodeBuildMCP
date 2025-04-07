@@ -1,5 +1,21 @@
 /**
- * Progress Service - Manages progress updates for long-running operations
+ * Progress Utilities - Handling progress reporting for long-running operations
+ *
+ * This utility module provides a system for tracking and reporting progress of
+ * long-running operations to clients. It handles the lifecycle of operation
+ * progress events, from initialization to completion or failure.
+ *
+ * Responsibilities:
+ * - Managing a registry of active operations and their progress states
+ * - Providing progress update capabilities to operation handlers
+ * - Creating operation-specific progress callback functions
+ * - Communicating progress information to clients
+ * - Maintaining a consistent format for progress reporting
+ *
+ * This is particularly important for time-consuming Xcode operations like building,
+ * testing, or installing apps, where users need feedback on the operation's status.
+ * The module integrates with the MCP server to potentially leverage future progress
+ * reporting capabilities.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

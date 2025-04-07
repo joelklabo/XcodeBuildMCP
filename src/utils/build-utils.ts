@@ -1,5 +1,19 @@
 /**
- * Build Utilities - Shared functions for build operations across platforms
+ * Build Utilities - Higher-level abstractions for Xcode build operations
+ *
+ * This utility module provides specialized functions for build-related operations
+ * across different platforms (macOS, iOS, watchOS, etc.). It serves as a higher-level
+ * abstraction layer on top of the core Xcode utilities.
+ *
+ * Responsibilities:
+ * - Providing a unified interface (executeXcodeBuild) for all build operations
+ * - Handling build-specific parameter formatting and validation
+ * - Standardizing response formatting for build results
+ * - Managing build-specific error handling and reporting
+ * - Supporting various build actions (build, clean, showBuildSettings, etc.)
+ *
+ * This file depends on the lower-level utilities in xcode.ts for command execution
+ * while adding build-specific behavior, formatting, and error handling.
  */
 
 import { log } from './logger.js';
@@ -35,16 +49,18 @@ export interface PlatformBuildOptions {
  * Common function to execute an Xcode build command across platforms
  * @param params Common build parameters
  * @param platformOptions Platform-specific options
+ * @param buildAction The xcodebuild action to perform (e.g., 'build', 'clean', 'test')
  * @returns Promise resolving to tool response
  */
 export async function executeXcodeBuild(
   params: SharedBuildParams,
   platformOptions: PlatformBuildOptions,
+  buildAction: string = 'build',
 ): Promise<ToolResponse> {
   const warningMessages: { type: 'text'; text: string }[] = [];
   const warningRegex = /\[warning\]: (.*)/g;
 
-  log('info', `Starting ${platformOptions.logPrefix} build for scheme ${params.scheme}`);
+  log('info', `Starting ${platformOptions.logPrefix} ${buildAction} for scheme ${params.scheme}`);
 
   try {
     const command = ['xcodebuild'];
@@ -111,7 +127,7 @@ export async function executeXcodeBuild(
       command.push(...params.extraArgs);
     }
 
-    command.push('build');
+    command.push(buildAction);
 
     const result = await executeXcodeCommand(command, platformOptions.logPrefix);
 
@@ -122,14 +138,17 @@ export async function executeXcodeBuild(
     }
 
     if (!result.success) {
-      log('error', `${platformOptions.logPrefix} build failed: ${result.error}`);
+      log('error', `${platformOptions.logPrefix} ${buildAction} failed: ${result.error}`);
 
       // Collect error information for BuildError
-      const _buildError = new BuildError(`Build failed for scheme ${params.scheme}`, result.error);
+      const _buildError = new BuildError(
+        `${buildAction} failed for scheme ${params.scheme}`,
+        result.error,
+      );
 
       // Create error response with warnings included
       const errorResponse = createTextResponse(
-        `❌ ${platformOptions.logPrefix} build failed for scheme ${params.scheme}. Error: ${result.error}`,
+        `❌ ${platformOptions.logPrefix} ${buildAction} failed for scheme ${params.scheme}. Error: ${result.error}`,
         true,
       );
 
@@ -140,26 +159,29 @@ export async function executeXcodeBuild(
       return errorResponse;
     }
 
-    log('info', `✅ ${platformOptions.logPrefix} build succeeded.`);
+    log('info', `✅ ${platformOptions.logPrefix} ${buildAction} succeeded.`);
 
-    // Create additional info based on platform
+    // Create additional info based on platform and action
     let additionalInfo = '';
 
-    if (platformOptions.platform === XcodePlatform.macOS) {
-      additionalInfo = `Next Steps:
+    // Only show next steps for 'build' action
+    if (buildAction === 'build') {
+      if (platformOptions.platform === XcodePlatform.macOS) {
+        additionalInfo = `Next Steps:
 1. Get App Path: get_macos_app_path_${params.workspacePath ? 'workspace' : 'project'}
 2. Get Bundle ID: get_macos_bundle_id
 3. Launch App: launch_macos_app`;
-    } else if (platformOptions.platform === XcodePlatform.iOS) {
-      additionalInfo = `Next Steps:
+      } else if (platformOptions.platform === XcodePlatform.iOS) {
+        additionalInfo = `Next Steps:
 1. Get App Path: get_ios_device_app_path_${params.workspacePath ? 'workspace' : 'project'}
 2. Get Bundle ID: get_ios_bundle_id`;
-    } else if (isSimulatorPlatform) {
-      const idOrName = platformOptions.simulatorId ? 'id' : 'name';
-      additionalInfo = `Next Steps:
+      } else if (isSimulatorPlatform) {
+        const idOrName = platformOptions.simulatorId ? 'id' : 'name';
+        additionalInfo = `Next Steps:
 1. Get App Path: get_simulator_app_path_by_${idOrName}_...
 2. Boot Simulator
 3. Install & Launch App`;
+      }
     }
 
     const successResponse: ToolResponse = {
@@ -167,21 +189,25 @@ export async function executeXcodeBuild(
         ...warningMessages,
         {
           type: 'text',
-          text: `✅ ${platformOptions.logPrefix} build succeeded for scheme ${params.scheme}.`,
-        },
-        {
-          type: 'text',
-          text: additionalInfo,
+          text: `✅ ${platformOptions.logPrefix} ${buildAction} succeeded for scheme ${params.scheme}.`,
         },
       ],
     };
 
+    // Only add additional info if we have any
+    if (additionalInfo) {
+      successResponse.content.push({
+        type: 'text',
+        text: additionalInfo,
+      });
+    }
+
     return successResponse;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    log('error', `Error during ${platformOptions.logPrefix} build: ${errorMessage}`);
+    log('error', `Error during ${platformOptions.logPrefix} ${buildAction}: ${errorMessage}`);
     return createTextResponse(
-      `Error during ${platformOptions.logPrefix} build: ${errorMessage}`,
+      `Error during ${platformOptions.logPrefix} ${buildAction}: ${errorMessage}`,
       true,
     );
   }

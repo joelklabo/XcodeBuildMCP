@@ -1,10 +1,30 @@
 /**
- * Xcode Utilities - Common functions for working with Xcode tools
+ * Xcode Utilities - Core infrastructure for interacting with Xcode tools
+ *
+ * This utility module provides the foundation for all Xcode interactions across the codebase.
+ * It offers low-level command execution, platform-specific utilities, and common functionality
+ * that can be used by any module requiring Xcode tool integration.
+ *
+ * Responsibilities:
+ * - Executing xcodebuild commands with proper argument handling (executeXcodeCommand)
+ * - Managing process spawning, output capture, and error handling
+ * - Providing progress reporting for long-running operations
+ * - Constructing platform-specific destination strings (constructDestinationString)
+ * - Defining common parameter interfaces for Xcode operations
+ * - Integrating with xcpretty for improved output formatting
+ *
+ * This file serves as the foundation layer for more specialized utilities like build-utils.ts,
+ * which build upon these core functions to provide higher-level abstractions.
  */
 
 import { spawn } from 'child_process';
 import { log } from './logger.js';
 import { ToolProgressUpdate, XcodePlatform } from '../types/common.js';
+import { v4 as uuidv4 } from 'uuid';
+import * as xcpretty from '@expo/xcpretty';
+
+// Re-export XcodePlatform for use in other modules
+export { XcodePlatform };
 
 export interface XcodeCommandResponse {
   success: boolean;
@@ -29,8 +49,6 @@ export interface XcodeParams {
   extraArgs?: string[];
   [key: string]: unknown; // Allow other properties if needed
 }
-
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Function type for progress updates
@@ -68,9 +86,9 @@ export async function executeXcodeCommand(
   const operationId = uuidv4();
 
   // Set up progress tracking
-  let lastProgressUpdate = 0;
-  const progressUpdateInterval = 1000; // Update interval in ms
-  let _lastProgressMessage = '';
+  const _lastProgressUpdate = 0;
+  const _progressUpdateInterval = 1000; // Update interval in ms
+  const _lastProgressMessage = '';
 
   // Initial progress update if callback provided
   if (progressCallback) {
@@ -83,6 +101,186 @@ export async function executeXcodeCommand(
     });
   }
 
+  // Determine if we should use xcpretty
+  const useXcpretty = command[0] === 'xcodebuild' && typeof xcpretty === 'function';
+
+  if (useXcpretty) {
+    log('info', 'Using xcpretty for improved output formatting');
+    return executeWithXcpretty(commandString, logPrefix, progressCallback, operationId);
+  } else {
+    log('info', 'Using standard execution method');
+    return executeStandard(commandString, logPrefix, progressCallback, operationId);
+  }
+}
+
+/**
+ * Execute command using xcpretty for better output
+ */
+async function executeWithXcpretty(
+  commandString: string,
+  logPrefix: string,
+  progressCallback?: ProgressCallback,
+  operationId?: string,
+): Promise<XcodeCommandResponse> {
+  return new Promise((resolve) => {
+    try {
+      // Track build phase and progress information
+      let currentPhase = 'Preparing';
+      let estimatedProgress = 0;
+      let lastProgressUpdate = 0;
+      const progressUpdateInterval = 1000; // Update interval in ms
+      let _lastProgressMessage = '';
+
+      // Define types for xcpretty API
+      interface XcprettyOptions {
+        onProgress?: (data: XcprettyProgressData) => void;
+        printBuildLog?: boolean;
+        noHighlight?: boolean;
+        simple?: boolean;
+      }
+
+      interface XcprettyProgressData {
+        phase?: string;
+        message?: string;
+        fileCount?: number;
+        fileIndex?: number;
+        target?: string;
+        configuration?: string;
+        file?: string;
+      }
+
+      // Using xcpretty as a function
+      const xcprettyFn = xcpretty as unknown as (
+        command: string,
+        options?: XcprettyOptions,
+      ) => Promise<{ status: number; output: string; error?: string }>;
+
+      xcprettyFn(commandString, {
+        onProgress: (data: XcprettyProgressData) => {
+          // Extract progress information if provided
+          if (data && progressCallback) {
+            // Update phase if provided
+            if (data.phase) {
+              currentPhase = data.phase;
+
+              // Update progress based on build phase
+              switch (currentPhase) {
+                case 'Clean':
+                  estimatedProgress = 5;
+                  break;
+                case 'Compile':
+                  estimatedProgress = 25;
+                  break;
+                case 'Link':
+                  estimatedProgress = 75;
+                  break;
+                case 'Copy':
+                case 'CodeSign':
+                  estimatedProgress = 90;
+                  break;
+                default:
+                // Keep current progress for unknown phases
+              }
+            }
+
+            // Use file counts if available
+            if (data.fileCount && data.fileIndex) {
+              const percent = Math.min(Math.floor((data.fileIndex / data.fileCount) * 100), 95);
+              estimatedProgress = percent;
+            }
+
+            // Send progress update
+            const now = Date.now();
+            if (now - lastProgressUpdate > progressUpdateInterval) {
+              lastProgressUpdate = now;
+
+              const message = data.message || `Processing ${currentPhase}...`;
+              _lastProgressMessage = message;
+
+              progressCallback({
+                operationId: operationId || uuidv4(),
+                status: 'running',
+                progress: estimatedProgress,
+                message,
+                timestamp: new Date().toISOString(),
+                details: `Phase: ${currentPhase}`,
+              });
+            }
+          }
+        },
+      })
+        .then((result) => {
+          const success = result.status === 0;
+
+          // Final progress update on completion
+          if (progressCallback) {
+            progressCallback({
+              operationId: operationId || uuidv4(),
+              status: success ? 'completed' : 'failed',
+              progress: success ? 100 : estimatedProgress,
+              message: success
+                ? `${logPrefix} completed successfully`
+                : `${logPrefix} failed with status code ${result.status}`,
+              timestamp: new Date().toISOString(),
+              details: success ? undefined : result.error?.substring(0, 500),
+            });
+          }
+
+          if (success) {
+            log('info', `${logPrefix} operation successful`);
+            resolve({
+              success: true,
+              output: result.output || `${logPrefix} operation completed successfully`,
+            });
+          } else {
+            log('error', `${logPrefix} operation failed with status code ${result.status}`);
+            resolve({
+              success: false,
+              output: result.output || '',
+              error: result.error || `Operation failed with status code ${result.status}`,
+            });
+          }
+        })
+        .catch((err: Error) => {
+          log('error', `${logPrefix} failed during xcpretty execution: ${err.message}`);
+
+          // Process error progress update
+          if (progressCallback) {
+            progressCallback({
+              operationId: operationId || uuidv4(),
+              status: 'failed',
+              progress: estimatedProgress,
+              message: `Failed during xcpretty execution: ${err.message}`,
+              timestamp: new Date().toISOString(),
+            });
+          }
+
+          resolve({
+            success: false,
+            output: '',
+            error: `Failed during xcpretty execution: ${err.message}`,
+          });
+        });
+    } catch (err) {
+      // If xcpretty fails for any reason, fall back to standard execution
+      log(
+        'warning',
+        `xcpretty failed, falling back to standard execution: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return executeStandard(commandString, logPrefix, progressCallback, operationId);
+    }
+  });
+}
+
+/**
+ * Execute command using standard child_process method
+ */
+async function executeStandard(
+  commandString: string,
+  logPrefix: string,
+  progressCallback?: ProgressCallback,
+  operationId?: string,
+): Promise<XcodeCommandResponse> {
   return new Promise((resolve) => {
     // Using 'sh -c' to handle complex commands and quoting properly
     const process = spawn('sh', ['-c', commandString], {
@@ -100,6 +298,9 @@ export async function executeXcodeCommand(
     let totalFiles = 0;
     let processedFiles = 0;
     let estimatedProgress = 0;
+    let lastProgressUpdate = 0;
+    const progressUpdateInterval = 1000; // Update interval in ms
+    let _lastProgressMessage = '';
 
     // Function to send progress updates
     const sendProgressUpdate = (message: string, forceSend = false): void => {
@@ -110,7 +311,7 @@ export async function executeXcodeCommand(
         _lastProgressMessage = message;
 
         progressCallback({
-          operationId,
+          operationId: operationId || uuidv4(),
           status: 'running',
           progress: estimatedProgress,
           message,
@@ -195,7 +396,7 @@ export async function executeXcodeCommand(
       // Final progress update on completion
       if (progressCallback) {
         progressCallback({
-          operationId,
+          operationId: operationId || uuidv4(),
           status: success ? 'completed' : 'failed',
           progress: success ? 100 : estimatedProgress,
           message: success
@@ -228,7 +429,7 @@ export async function executeXcodeCommand(
       // Process error progress update
       if (progressCallback) {
         progressCallback({
-          operationId,
+          operationId: operationId || uuidv4(),
           status: 'failed',
           progress: 0,
           message: `Failed to start ${logPrefix} process: ${err.message}`,

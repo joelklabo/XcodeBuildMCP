@@ -6,7 +6,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
 import { executeXcodeCommand } from '../utils/xcode.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
-import { ToolResponse } from '../types/common.js';
+import { ToolResponse, XcodePlatform } from '../types/common.js';
+import { executeXcodeBuild } from '../utils/build-utils.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -29,32 +30,49 @@ async function _handleShowBuildSettingsLogic(params: {
   log('info', `Showing build settings for scheme ${params.scheme}`);
 
   try {
-    const command = ['xcodebuild'];
+    // Use executeXcodeBuild with 'showBuildSettings' action
+    const result = await executeXcodeBuild(
+      {
+        ...params,
+        configuration: 'Debug', // Default configuration
+      },
+      {
+        platform: XcodePlatform.macOS, // Default platform, not important for showBuildSettings
+        logPrefix: 'Show Build Settings',
+      },
+      'showBuildSettings', // Use showBuildSettings action
+    );
 
-    if (params.workspacePath) {
-      command.push('-workspace', params.workspacePath);
-    } else if (params.projectPath) {
-      command.push('-project', params.projectPath);
-    } // No else needed, one path is guaranteed by callers
+    // If executeXcodeBuild returned an error, just return it
+    if (result.isError) {
+      return result;
+    }
 
-    command.push('-scheme', params.scheme);
-    command.push('-showBuildSettings');
-
-    const result = await executeXcodeCommand(command, 'Show Build Settings');
-
-    if (!result.success) {
-      return createTextResponse(`Failed to show build settings: ${result.error}`, true);
+    // Otherwise, format the output for display
+    // Extract the output from the first text element that's not a warning
+    let buildSettingsOutput = '';
+    if (result.content) {
+      for (const item of result.content) {
+        if (
+          item.type === 'text' &&
+          !item.text.includes('Warning:') &&
+          !item.text.includes('succeeded')
+        ) {
+          buildSettingsOutput = item.text;
+          break;
+        }
+      }
     }
 
     return {
       content: [
         {
-          type: 'text' as const,
+          type: 'text',
           text: `✅ Build settings for scheme ${params.scheme}:`,
         },
         {
-          type: 'text' as const,
-          text: result.output,
+          type: 'text',
+          text: buildSettingsOutput || 'Build settings retrieved successfully.',
         },
       ],
     };
@@ -75,6 +93,8 @@ async function _handleListSchemesLogic(params: {
   log('info', 'Listing schemes');
 
   try {
+    // For listing schemes, we can't use executeXcodeBuild directly since it's not a standard action
+    // We need to create a custom command with -list flag
     const command = ['xcodebuild', '-list'];
 
     if (params.workspacePath) {
@@ -115,15 +135,15 @@ async function _handleListSchemesLogic(params: {
     return {
       content: [
         {
-          type: 'text' as const,
+          type: 'text',
           text: `✅ Available schemes:`,
         },
         {
-          type: 'text' as const,
+          type: 'text',
           text: schemes.join('\n'),
         },
         {
-          type: 'text' as const,
+          type: 'text',
           text: nextStepsText,
         },
       ],

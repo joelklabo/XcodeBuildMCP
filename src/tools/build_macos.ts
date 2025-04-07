@@ -6,10 +6,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { log } from '../utils/logger.js';
-import { executeXcodeCommand } from '../utils/xcode.js';
-import { createProgressCallback } from '../utils/progress.js';
+import { XcodePlatform } from '../utils/xcode.js';
 import { createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
+import { executeXcodeBuild } from '../utils/build-utils.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -33,73 +33,18 @@ async function _handleMacOSBuildLogic(params: {
   derivedDataPath?: string;
   extraArgs?: string[];
 }): Promise<ToolResponse> {
-  log('info', `Starting macOS build for scheme ${params.scheme}`);
-  const _warningMessages: { type: 'text'; text: string }[] = [];
-  const _warningRegex = /\[warning\]: (.*)/g;
+  log('info', `Starting macOS build for scheme ${params.scheme} (internal)`);
 
-  try {
-    const command = ['xcodebuild'];
-
-    if (params.workspacePath) {
-      command.push('-workspace', params.workspacePath);
-    } else if (params.projectPath) {
-      command.push('-project', params.projectPath);
-    } // No else needed, one path is guaranteed by callers
-
-    command.push('-scheme', params.scheme);
-    command.push('-configuration', params.configuration);
-    command.push('-destination', 'platform=macOS');
-
-    if (params.derivedDataPath) {
-      command.push('-derivedDataPath', params.derivedDataPath);
-    }
-
-    if (params.extraArgs) {
-      command.push(...params.extraArgs);
-    }
-
-    command.push('build');
-
-    // Create a progress callback for this operation
-    const progressCallback = createProgressCallback(`macOS Build ${params.scheme}`);
-
-    const result = await executeXcodeCommand(command, 'macOS Build', progressCallback);
-
-    let match;
-    while ((match = _warningRegex.exec(result.output)) !== null) {
-      _warningMessages.push({ type: 'text', text: `⚠️ Warning: ${match[1]}` });
-    }
-
-    if (!result.success) {
-      log('error', `macOS build failed for scheme ${params.scheme}: ${result.error}`);
-      const errorResponse = createTextResponse(
-        `❌ macOS build failed for scheme ${params.scheme}. Error: ${result.error}`,
-        true,
-      );
-      if (errorResponse.content) {
-        errorResponse.content.unshift(..._warningMessages);
-      }
-      return errorResponse;
-    }
-
-    log('info', `✅ macOS build succeeded for scheme ${params.scheme}.`);
-    const successResponse: ToolResponse = {
-      content: [
-        ..._warningMessages,
-        { type: 'text', text: `✅ macOS build succeeded for scheme ${params.scheme}.` },
-        {
-          type: 'text',
-          text: `Next Steps:\n1. Get App Path: Use get_app_path_for_device_...\n2. Launch App: Use launch_macos_app with the path from step 1`,
-        },
-      ],
-    };
-    return successResponse;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log('error', `Error during macOS build: ${errorMessage}`);
-    const errorResponse = createTextResponse(`Error during macOS build: ${errorMessage}`, true);
-    return errorResponse;
-  }
+  return executeXcodeBuild(
+    {
+      ...params,
+    },
+    {
+      platform: XcodePlatform.macOS,
+      logPrefix: 'macOS Build',
+    },
+    'build',
+  );
 }
 
 async function _getAppPathFromBuildSettings(params: {
@@ -111,35 +56,39 @@ async function _getAppPathFromBuildSettings(params: {
   extraArgs?: string[];
 }): Promise<{ success: boolean; appPath?: string; error?: string }> {
   try {
-    const getAppSettingsCommand = ['xcodebuild'];
-
-    if (params.workspacePath) {
-      getAppSettingsCommand.push('-workspace', params.workspacePath);
-    } else if (params.projectPath) {
-      getAppSettingsCommand.push('-project', params.projectPath);
-    } // Path guaranteed by caller validation
-    getAppSettingsCommand.push(
-      '-scheme',
-      params.scheme,
-      '-configuration',
-      params.configuration,
-      '-showBuildSettings',
+    // Use executeXcodeBuild with 'showBuildSettings' action for consistent error handling
+    const settingsResult = await executeXcodeBuild(
+      {
+        ...params,
+      },
+      {
+        platform: XcodePlatform.macOS,
+        logPrefix: 'Get Build Settings for Launch',
+      },
+      'showBuildSettings',
     );
 
-    // Create a progress callback for getting build settings
-    const settingsProgressCallback = createProgressCallback(`Get Build Settings ${params.scheme}`);
-
-    const settingsResult = await executeXcodeCommand(
-      getAppSettingsCommand,
-      'Get Build Settings for Launch',
-      settingsProgressCallback,
-    );
-    if (!settingsResult.success) {
-      return { success: false, error: settingsResult.error };
+    // Check for errors in execution
+    if (settingsResult.isError) {
+      return {
+        success: false,
+        error: settingsResult.content?.[0]?.text || 'Failed to get build settings',
+      };
     }
 
-    const builtProductsDirMatch = settingsResult.output.match(/BUILT_PRODUCTS_DIR = (.+)$/m);
-    const fullProductNameMatch = settingsResult.output.match(/FULL_PRODUCT_NAME = (.+)$/m);
+    // Extract build settings output
+    let buildSettingsOutput = '';
+    if (settingsResult.content) {
+      for (const item of settingsResult.content) {
+        if (item.type === 'text' && !item.text.includes('✅') && !item.text.includes('⚠️')) {
+          buildSettingsOutput = item.text;
+          break;
+        }
+      }
+    }
+
+    const builtProductsDirMatch = buildSettingsOutput.match(/BUILT_PRODUCTS_DIR = (.+)$/m);
+    const fullProductNameMatch = buildSettingsOutput.match(/FULL_PRODUCT_NAME = (.+)$/m);
 
     if (!builtProductsDirMatch || !fullProductNameMatch) {
       return { success: false, error: 'Could not extract app path from build settings' };
