@@ -41,13 +41,14 @@ export interface XcodeParams {
   scheme?: string;
   configuration?: string;
   derivedDataPath?: string;
-  platform?: XcodePlatform; // Added platform here
-  destination?: string; // Explicit destination can override platform logic
+  platform?: XcodePlatform;
+  destination?: string;
   simulatorName?: string;
   simulatorId?: string;
   useLatestOS?: boolean;
+  arch?: string;
   extraArgs?: string[];
-  [key: string]: unknown; // Allow other properties if needed
+  [key: string]: unknown;
 }
 
 /**
@@ -520,6 +521,7 @@ export function addXcodeParameters(
  * @param simulatorName Optional simulator name
  * @param simulatorId Optional simulator UUID
  * @param useLatest Whether to use the latest simulator version (primarily for named simulators)
+ * @param arch Optional architecture for macOS builds (arm64 or x86_64)
  * @returns Properly formatted destination string for xcodebuild
  */
 export function constructDestinationString(
@@ -527,6 +529,7 @@ export function constructDestinationString(
   simulatorName?: string,
   simulatorId?: string,
   useLatest: boolean = true,
+  arch?: string,
 ): string {
   const isSimulatorPlatform = [
     XcodePlatform.iOSSimulator,
@@ -560,7 +563,7 @@ export function constructDestinationString(
   // Handle non-simulator platforms
   switch (platform) {
     case XcodePlatform.macOS:
-      return 'platform=macOS,arch=arm64,arch=x86_64'; // Specify arch for universal binary
+      return arch ? `platform=macOS,arch=${arch}` : 'platform=macOS';
     case XcodePlatform.iOS:
       return 'generic/platform=iOS';
     case XcodePlatform.watchOS:

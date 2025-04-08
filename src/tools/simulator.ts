@@ -1,5 +1,15 @@
 /**
  * Simulator Tools - Functions for working with iOS simulators using xcrun simctl
+ *
+ * This module provides tools for interacting with iOS simulators through the xcrun simctl
+ * command-line interface. It supports listing, booting, and interacting with simulators.
+ *
+ * Responsibilities:
+ * - Listing available iOS simulators with their UUIDs and properties
+ * - Booting simulators by UUID
+ * - Opening the Simulator.app application
+ * - Installing applications in simulators
+ * - Launching applications in simulators by bundle ID
  */
 
 import { z } from 'zod';

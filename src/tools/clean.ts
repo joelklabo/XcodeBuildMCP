@@ -1,5 +1,15 @@
 /**
  * Clean Tool - Uses xcodebuild's native clean action to clean build products
+ *
+ * This module provides tools for cleaning build products from Xcode projects and workspaces
+ * using xcodebuild's native 'clean' action. Cleaning is important for ensuring fresh builds
+ * and resolving certain build issues.
+ *
+ * Responsibilities:
+ * - Cleaning build products from project files
+ * - Cleaning build products from workspaces
+ * - Supporting configuration-specific cleaning
+ * - Handling derived data path specification
  */
 
 import { z } from 'zod';

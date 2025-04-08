@@ -1,5 +1,15 @@
 /**
  * Common types and utilities shared across build tool modules
+ *
+ * This module provides shared parameter schemas, types, and utility functions used by
+ * multiple tool modules. Centralizing these definitions ensures consistency across
+ * the codebase and simplifies maintenance.
+ *
+ * Responsibilities:
+ * - Defining common parameter schemas with descriptive documentation
+ * - Providing base parameter interfaces for workspace and project operations
+ * - Implementing shared tool registration utilities
+ * - Standardizing response formatting across tools
  */
 
 import { z } from 'zod';

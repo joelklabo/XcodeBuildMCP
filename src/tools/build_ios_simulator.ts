@@ -1,5 +1,15 @@
 /**
  * iOS Simulator Build Tools - Tools for building and running iOS applications in simulators
+ *
+ * This module provides specialized tools for building and running iOS applications in simulators
+ * using xcodebuild. It supports both workspace and project-based builds with simulator targeting
+ * by name or UUID.
+ *
+ * Responsibilities:
+ * - Building iOS applications for simulators from project files and workspaces
+ * - Running iOS applications in simulators after building
+ * - Supporting simulator targeting by name or UUID
+ * - Handling build configuration and derived data paths
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

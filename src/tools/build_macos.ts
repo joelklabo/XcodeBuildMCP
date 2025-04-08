@@ -1,5 +1,15 @@
 /**
  * macOS Build Tools - Tools for building and running macOS applications
+ *
+ * This module provides specialized tools for building and running macOS applications
+ * using xcodebuild. It supports both workspace and project-based builds with architecture
+ * specification (arm64 or x86_64).
+ *
+ * Responsibilities:
+ * - Building macOS applications from project files and workspaces
+ * - Running macOS applications after building
+ * - Supporting architecture-specific builds (arm64, x86_64)
+ * - Handling build configuration and derived data paths
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -10,6 +20,7 @@ import { XcodePlatform, executeXcodeCommand } from '../utils/xcode.js';
 import { createTextResponse } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
 import { executeXcodeBuild } from '../utils/build-utils.js';
+import { z } from 'zod';
 import {
   registerTool,
   workspacePathSchema,
@@ -19,6 +30,12 @@ import {
   derivedDataPathSchema,
   extraArgsSchema,
 } from './common.js';
+
+// Schema for architecture parameter
+const archSchema = z
+  .enum(['arm64', 'x86_64'])
+  .optional()
+  .describe('Architecture to build for (arm64 or x86_64). For macOS only.');
 
 // --- Private Helper Functions ---
 
@@ -31,6 +48,7 @@ async function _handleMacOSBuildLogic(params: {
   scheme: string;
   configuration: string;
   derivedDataPath?: string;
+  arch?: string;
   extraArgs?: string[];
 }): Promise<ToolResponse> {
   log('info', `Starting macOS build for scheme ${params.scheme} (internal)`);
@@ -41,6 +59,7 @@ async function _handleMacOSBuildLogic(params: {
     },
     {
       platform: XcodePlatform.macOS,
+      arch: params.arch,
       logPrefix: 'macOS Build',
     },
     'build',
@@ -53,6 +72,7 @@ async function _getAppPathFromBuildSettings(params: {
   scheme: string;
   configuration: string;
   derivedDataPath?: string;
+  arch?: string;
   extraArgs?: string[];
 }): Promise<{ success: boolean; appPath?: string; error?: string }> {
   try {
@@ -116,6 +136,7 @@ async function _handleMacOSBuildAndRunLogic(params: {
   scheme: string;
   configuration: string;
   derivedDataPath?: string;
+  arch?: string;
   extraArgs?: string[];
 }): Promise<ToolResponse> {
   log('info', 'Handling macOS build & run logic...');
@@ -198,6 +219,7 @@ export function registerMacOSBuildTools(server: McpServer): void {
     scheme: string;
     configuration?: string;
     derivedDataPath?: string;
+    arch?: string;
     extraArgs?: string[];
   };
 
@@ -210,6 +232,7 @@ export function registerMacOSBuildTools(server: McpServer): void {
       scheme: schemeSchema,
       configuration: configurationSchema,
       derivedDataPath: derivedDataPathSchema,
+      arch: archSchema,
       extraArgs: extraArgsSchema,
     },
     async (params) =>
@@ -224,6 +247,7 @@ export function registerMacOSBuildTools(server: McpServer): void {
     scheme: string;
     configuration?: string;
     derivedDataPath?: string;
+    arch?: string;
     extraArgs?: string[];
   };
 
@@ -236,6 +260,7 @@ export function registerMacOSBuildTools(server: McpServer): void {
       scheme: schemeSchema,
       configuration: configurationSchema,
       derivedDataPath: derivedDataPathSchema,
+      arch: archSchema,
       extraArgs: extraArgsSchema,
     },
     async (params) =>
@@ -253,6 +278,7 @@ export function registerMacOSBuildAndRunTools(server: McpServer): void {
     scheme: string;
     configuration?: string;
     derivedDataPath?: string;
+    arch?: string;
     extraArgs?: string[];
   };
 
@@ -279,6 +305,7 @@ export function registerMacOSBuildAndRunTools(server: McpServer): void {
     scheme: string;
     configuration?: string;
     derivedDataPath?: string;
+    arch?: string;
     extraArgs?: string[];
   };
 

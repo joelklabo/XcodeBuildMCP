@@ -1,3 +1,17 @@
+/**
+ * Project Discovery Tools - Find Xcode projects and workspaces
+ *
+ * This module provides tools for scanning directories to discover Xcode project (.xcodeproj)
+ * and workspace (.xcworkspace) files. This is useful for initial project exploration and
+ * for identifying available projects to work with.
+ *
+ * Responsibilities:
+ * - Recursively scanning directories for Xcode projects and workspaces
+ * - Filtering out common directories that should be skipped (build, DerivedData, etc.)
+ * - Respecting maximum depth limits to prevent excessive scanning
+ * - Providing formatted output with relative paths for discovered files
+ */
+
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
@@ -8,6 +22,7 @@ import { createTextContent } from './common.js';
 
 // Constants
 const DEFAULT_MAX_DEPTH = 5;
+const SKIPPED_DIRS = new Set(['build', 'DerivedData', 'Pods', '.git', 'node_modules']);
 
 // Type definition for parameters
 type DiscoverProjectsParams = {
@@ -28,106 +43,98 @@ async function _findProjectsRecursive(
   maxDepth: number,
   results: { projects: string[]; workspaces: string[] },
 ): Promise<void> {
-  const relativeDirPath = path.relative(workspaceRootAbs, currentDirAbs);
-  if (
-    relativeDirPath.startsWith('node_modules') ||
-    (relativeDirPath === '' && currentDirAbs.endsWith('/node_modules'))
-  ) {
-    log('debug', `Skipping node_modules dir: ${relativeDirPath || 'node_modules'}`);
-    return;
-  }
-
-  if (maxDepth !== -1 && currentDepth > maxDepth) {
+  // Explicit depth check (now simplified as maxDepth is always non-negative)
+  if (currentDepth >= maxDepth) {
+    log('debug', `Max depth ${maxDepth} reached at ${currentDirAbs}, stopping recursion.`);
     return;
   }
 
   log('debug', `Scanning directory: ${currentDirAbs} at depth ${currentDepth}`);
+  const normalizedWorkspaceRoot = path.normalize(workspaceRootAbs);
 
   try {
     const entries = await fs.readdir(currentDirAbs, { withFileTypes: true });
     for (const entry of entries) {
       const absoluteEntryPath = path.join(currentDirAbs, entry.name);
+      const relativePath = path.relative(workspaceRootAbs, absoluteEntryPath);
 
+      // --- Skip conditions ---
       if (entry.isSymbolicLink()) {
-        log('debug', `Skipping symbolic link: ${absoluteEntryPath}`);
+        log('debug', `Skipping symbolic link: ${relativePath}`);
         continue;
       }
 
-      if (entry.isDirectory()) {
-        if (['build', 'DerivedData', 'Pods', '.git', 'node_modules'].includes(entry.name)) {
-          log('debug', `Skipping directory by name: ${entry.name} at ${absoluteEntryPath}`);
-          continue;
-        }
+      // Skip common build/dependency directories by name
+      if (entry.isDirectory() && SKIPPED_DIRS.has(entry.name)) {
+        log('debug', `Skipping standard directory: ${relativePath}`);
+        continue;
+      }
 
-        let found = false;
-        let isProject = false;
+      // Ensure entry is within the workspace root (security/sanity check)
+      if (!path.normalize(absoluteEntryPath).startsWith(normalizedWorkspaceRoot)) {
+        log(
+          'warn',
+          `Skipping entry outside workspace root: ${absoluteEntryPath} (Workspace: ${workspaceRootAbs})`,
+        );
+        continue;
+      }
+
+      // --- Process entries ---
+      if (entry.isDirectory()) {
+        let isXcodeBundle = false;
 
         if (entry.name.endsWith('.xcodeproj')) {
-          found = true;
-          isProject = true;
+          results.projects.push(relativePath);
+          log('debug', `Found project: ${relativePath}`);
+          isXcodeBundle = true;
         } else if (entry.name.endsWith('.xcworkspace')) {
-          found = true;
-          isProject = false;
+          results.workspaces.push(relativePath);
+          log('debug', `Found workspace: ${relativePath}`);
+          isXcodeBundle = true;
         }
 
-        if (found) {
-          const normalizedWorkspaceRoot = path.normalize(workspaceRootAbs);
-          if (!path.normalize(absoluteEntryPath).startsWith(normalizedWorkspaceRoot)) {
-            log(
-              'warn',
-              `Discarding found item outside workspace: ${absoluteEntryPath} (Workspace: ${workspaceRootAbs})`,
-            );
-            continue;
-          }
-
-          const relativePath = path.relative(workspaceRootAbs, absoluteEntryPath);
-          log(
-            'debug',
-            `Found ${isProject ? 'project' : 'workspace'}: ${relativePath} (Absolute: ${absoluteEntryPath})`,
+        // Recurse into regular directories, but not into found project/workspace bundles
+        if (!isXcodeBundle) {
+          await _findProjectsRecursive(
+            absoluteEntryPath,
+            workspaceRootAbs,
+            currentDepth + 1,
+            maxDepth,
+            results,
           );
-          if (isProject) {
-            results.projects.push(relativePath);
-          } else {
-            results.workspaces.push(relativePath);
-          }
-          continue;
         }
-
-        await _findProjectsRecursive(
-          absoluteEntryPath,
-          workspaceRootAbs,
-          currentDepth + 1,
-          maxDepth,
-          results,
-        );
       }
     }
   } catch (error: unknown) {
     let code: string | undefined;
     let message = 'Unknown error';
 
-    // Type guard for error properties
-    if (typeof error === 'object' && error !== null) {
+    if (error instanceof Error) {
+      message = error.message;
       if ('code' in error) {
-        code = String(error.code);
+        code = (error as NodeJS.ErrnoException).code;
       }
-      if (error instanceof Error) {
+    } else if (typeof error === 'object' && error !== null) {
+      if ('message' in error && typeof error.message === 'string') {
         message = error.message;
       }
+      if ('code' in error && typeof error.code === 'string') {
+        code = error.code;
+      }
+    } else {
+      message = String(error);
     }
 
-    // Ignore errors like permission denied, log others
-    if (code !== 'EPERM' && code !== 'EACCES') {
-      log('warn', `Error scanning directory ${currentDirAbs}: ${message}`);
-    } else {
+    if (code === 'EPERM' || code === 'EACCES') {
       log('debug', `Permission denied scanning directory: ${currentDirAbs}`);
+    } else {
+      log('warn', `Error scanning directory ${currentDirAbs}: ${message} (Code: ${code ?? 'N/A'})`);
     }
   }
 }
 
 /**
  * Internal logic for discovering projects.
- * NOTE: Error handling for filesystem access is done here.
  */
 async function _handleDiscoveryLogic(params: DiscoverProjectsParams): Promise<ToolResponse> {
   const { scanPath: relativeScanPath, maxDepth, workspaceRoot } = params;
@@ -164,28 +171,36 @@ async function _handleDiscoveryLogic(params: DiscoverProjectsParams): Promise<To
       };
     }
   } catch (error: unknown) {
-    let message = 'Unknown error accessing scan path';
     let code: string | undefined;
+    let message = 'Unknown error accessing scan path';
 
-    // Type guards
-    if (typeof error === 'object' && error !== null) {
-      if ('code' in error) {
-        code = String(error.code);
-      }
-    }
+    // Type guards - refined
     if (error instanceof Error) {
       message = error.message;
+      // Check for code property specific to Node.js fs errors
+      if ('code' in error) {
+        code = (error as NodeJS.ErrnoException).code;
+      }
+    } else if (typeof error === 'object' && error !== null) {
+      if ('message' in error && typeof error.message === 'string') {
+        message = error.message;
+      }
+      if ('code' in error && typeof error.code === 'string') {
+        code = error.code;
+      }
+    } else {
+      message = String(error);
     }
 
     const errorMsg = `Failed to access scan path: ${absoluteScanPath}. Error: ${message}`;
-    log('error', `${errorMsg} - ${code || ''}`);
-    // Return ToolResponse error format
+    log('error', `${errorMsg} - Code: ${code ?? 'N/A'}`);
     return {
       content: [createTextContent(errorMsg)],
       isError: true,
     };
   }
 
+  // Start the recursive scan from the validated absolute path
   await _findProjectsRecursive(absoluteScanPath, workspaceRoot, 0, maxDepth, results);
 
   log(
@@ -199,12 +214,24 @@ async function _handleDiscoveryLogic(params: DiscoverProjectsParams): Promise<To
     ),
   ];
 
+  // Sort results for consistent output
+  results.projects.sort();
+  results.workspaces.sort();
+
   if (results.projects.length > 0) {
-    responseContent.push(createTextContent(`Projects:\n - ${results.projects.join('\n - ')}`));
+    responseContent.push(
+      createTextContent(
+        `Projects (relative to workspace root):\n - ${results.projects.join('\n - ')}`,
+      ),
+    );
   }
 
   if (results.workspaces.length > 0) {
-    responseContent.push(createTextContent(`Workspaces:\n - ${results.workspaces.join('\n - ')}`));
+    responseContent.push(
+      createTextContent(
+        `Workspaces (relative to workspace root):\n - ${results.workspaces.join('\n - ')}`,
+      ),
+    );
   }
 
   return {
@@ -218,8 +245,6 @@ async function _handleDiscoveryLogic(params: DiscoverProjectsParams): Promise<To
 // --- Public Tool Definition ---
 
 export function registerDiscoverProjectsTool(server: McpServer): void {
-  log('info', 'Registering discover_projects tool');
-
   server.tool(
     'discover_projects',
     'Scans a directory (defaults to workspace root) to find Xcode project (.xcodeproj) and workspace (.xcworkspace) files.',
@@ -229,26 +254,22 @@ export function registerDiscoverProjectsTool(server: McpServer): void {
         .string()
         .optional()
         .describe('Optional: Path relative to workspace root to scan. Defaults to workspace root.'),
-      maxDepth: z
-        .number()
-        .int()
-        .optional()
-        .default(DEFAULT_MAX_DEPTH)
-        .describe(
-          `Optional: Maximum directory depth to scan. Defaults to ${DEFAULT_MAX_DEPTH}. Use -1 for unlimited depth.`,
-        ),
+      maxDepth: z.number().int().nonnegative().optional().default(DEFAULT_MAX_DEPTH).describe(
+        `Optional: Maximum directory depth to scan. Defaults to ${DEFAULT_MAX_DEPTH}.`, // Removed mention of -1
+      ),
     },
     async (params) => {
       try {
         return await _handleDiscoveryLogic(params as DiscoverProjectsParams);
       } catch (error: unknown) {
-        let errorMessage = 'An unexpected error occurred';
+        let errorMessage = '';
         if (error instanceof Error) {
-          errorMessage = `An unexpected error occurred: ${error.message}`;
-          log('error', errorMessage);
+          errorMessage = `An unexpected error occurred during project discovery: ${error.message}`;
+          log('error', `${errorMessage}\n${error.stack ?? ''}`);
         } else {
-          log('error', `Caught non-Error value: ${String(error)}`);
-          errorMessage = 'An unexpected non-error value was thrown.';
+          const errorString = String(error);
+          log('error', `Caught non-Error value during project discovery: ${errorString}`);
+          errorMessage = `An unexpected non-error value was thrown: ${errorString}`;
         }
         return {
           content: [createTextContent(errorMessage)],

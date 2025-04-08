@@ -1,5 +1,14 @@
 /**
  * iOS Device Build Tools - Tools for building iOS applications for physical devices
+ *
+ * This module provides specialized tools for building iOS applications targeting physical
+ * devices using xcodebuild. It supports both workspace and project-based builds.
+ *
+ * Responsibilities:
+ * - Building iOS applications for physical devices from project files
+ * - Building iOS applications for physical devices from workspaces
+ * - Handling build configuration and derived data paths
+ * - Providing platform-specific destination parameters
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

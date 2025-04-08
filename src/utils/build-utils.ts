@@ -42,6 +42,7 @@ export interface PlatformBuildOptions {
   simulatorName?: string;
   simulatorId?: string;
   useLatestOS?: boolean;
+  arch?: string;
   logPrefix: string;
 }
 
@@ -104,7 +105,13 @@ export async function executeXcodeBuild(
         );
       }
     } else if (platformOptions.platform === XcodePlatform.macOS) {
-      destinationString = 'platform=macOS,arch=arm64,arch=x86_64';
+      destinationString = constructDestinationString(
+        platformOptions.platform,
+        undefined,
+        undefined,
+        false,
+        platformOptions.arch,
+      );
     } else if (platformOptions.platform === XcodePlatform.iOS) {
       destinationString = 'generic/platform=iOS';
     } else if (platformOptions.platform === XcodePlatform.watchOS) {

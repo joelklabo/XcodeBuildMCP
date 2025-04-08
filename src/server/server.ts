@@ -1,3 +1,18 @@
+/**
+ * Server Configuration - MCP Server setup and lifecycle management
+ *
+ * This module handles the creation, configuration, and lifecycle management of the
+ * Model Context Protocol (MCP) server. It provides the foundation for all tool
+ * registrations and server capabilities.
+ *
+ * Responsibilities:
+ * - Creating and configuring the MCP server instance
+ * - Setting up server capabilities and options
+ * - Initializing progress reporting services
+ * - Managing server lifecycle (start/stop)
+ * - Handling transport configuration (stdio)
+ */
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { log } from '../utils/logger.js';

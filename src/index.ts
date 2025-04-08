@@ -2,7 +2,15 @@
 
 /**
  * XcodeBuildMCP - Main entry point
- * This file imports and configures the MCP server and tools
+ *
+ * This file serves as the entry point for the XcodeBuildMCP server, importing and registering
+ * all tool modules with the MCP server. It follows the platform-specific approach for Xcode tools.
+ *
+ * Responsibilities:
+ * - Creating and starting the MCP server
+ * - Registering all platform-specific tool modules
+ * - Configuring server options and logging
+ * - Handling server lifecycle events
  */
 
 // Import server components

@@ -1,12 +1,22 @@
 /**
  * App Path Tools - Tools for retrieving app bundle paths
+ *
+ * This module provides tools for retrieving app bundle paths for various platforms
+ * (macOS, iOS, watchOS, etc.) from both project files and workspaces.
+ *
+ * Responsibilities:
+ * - Retrieving app bundle paths for simulator builds
+ * - Retrieving app bundle paths for device builds
+ * - Retrieving app bundle paths for macOS builds
+ * - Supporting architecture-specific builds for macOS
+ * - Handling platform-specific destination parameters
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { log } from '../utils/logger.js';
 import { validateRequiredParam, createTextResponse } from '../utils/validation.js';
 import { ToolResponse, XcodePlatform } from '../types/common.js';
-import { executeXcodeCommand } from '../utils/xcode.js';
+import { executeXcodeCommand, constructDestinationString } from '../utils/xcode.js';
 import {
   registerTool,
   workspacePathSchema,
@@ -22,6 +32,13 @@ import {
   BaseAppPathSimulatorNameParams,
   BaseAppPathSimulatorIdParams,
 } from './common.js';
+import { z } from 'zod';
+
+// Schema for architecture parameter
+const archSchema = z
+  .enum(['arm64', 'x86_64'])
+  .optional()
+  .describe('Architecture to build for (arm64 or x86_64). For macOS only.');
 
 // --- Private Helper Functions ---
 
@@ -37,6 +54,7 @@ async function _handleGetAppPathLogic(params: {
   simulatorName?: string;
   simulatorId?: string;
   useLatestOS: boolean;
+  arch?: string;
 }): Promise<ToolResponse> {
   log('info', `Getting app path for scheme ${params.scheme} on platform ${params.platform}`);
 
@@ -77,7 +95,13 @@ async function _handleGetAppPathLogic(params: {
         );
       }
     } else if (params.platform === XcodePlatform.macOS) {
-      destinationString = 'platform=macOS,arch=arm64,arch=x86_64';
+      destinationString = constructDestinationString(
+        params.platform,
+        undefined,
+        undefined,
+        false,
+        params.arch,
+      );
     } else if (params.platform === XcodePlatform.iOS) {
       destinationString = 'generic/platform=iOS';
     } else if (params.platform === XcodePlatform.watchOS) {
@@ -160,7 +184,7 @@ async function _handleGetAppPathLogic(params: {
  * Registers the get_macos_app_path_workspace tool
  */
 export function registerGetMacOSAppPathWorkspaceTool(server: McpServer): void {
-  type Params = BaseWorkspaceParams & { configuration?: string };
+  type Params = BaseWorkspaceParams & { configuration?: string; arch?: string };
   registerTool<Params>(
     server,
     'get_macos_app_path_workspace',
@@ -169,6 +193,7 @@ export function registerGetMacOSAppPathWorkspaceTool(server: McpServer): void {
       workspacePath: workspacePathSchema,
       scheme: schemeSchema,
       configuration: configurationSchema,
+      arch: archSchema,
     },
     async (params: Params) => {
       const workspaceValidation = validateRequiredParam('workspacePath', params.workspacePath);
@@ -182,6 +207,7 @@ export function registerGetMacOSAppPathWorkspaceTool(server: McpServer): void {
         configuration: params.configuration ?? 'Debug',
         platform: XcodePlatform.macOS,
         useLatestOS: true,
+        arch: params.arch, // Pass the architecture parameter
       });
     },
   );
@@ -191,7 +217,7 @@ export function registerGetMacOSAppPathWorkspaceTool(server: McpServer): void {
  * Registers the get_macos_app_path_project tool
  */
 export function registerGetMacOSAppPathProjectTool(server: McpServer): void {
-  type Params = BaseProjectParams & { configuration?: string };
+  type Params = BaseProjectParams & { configuration?: string; arch?: string };
   registerTool<Params>(
     server,
     'get_macos_app_path_project',
@@ -200,6 +226,7 @@ export function registerGetMacOSAppPathProjectTool(server: McpServer): void {
       projectPath: projectPathSchema,
       scheme: schemeSchema,
       configuration: configurationSchema,
+      arch: archSchema,
     },
     async (params: Params) => {
       const projectValidation = validateRequiredParam('projectPath', params.projectPath);
@@ -213,6 +240,7 @@ export function registerGetMacOSAppPathProjectTool(server: McpServer): void {
         configuration: params.configuration ?? 'Debug',
         platform: XcodePlatform.macOS,
         useLatestOS: true,
+        arch: params.arch,
       });
     },
   );

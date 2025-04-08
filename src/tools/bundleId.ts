@@ -1,5 +1,15 @@
 /**
  * Bundle ID Tools - Extract bundle identifiers from app bundles
+ *
+ * This module provides tools for extracting bundle identifiers from iOS and macOS
+ * application bundles (.app directories). Bundle IDs are required for launching
+ * and installing applications.
+ *
+ * Responsibilities:
+ * - Extracting bundle IDs from macOS app bundles
+ * - Extracting bundle IDs from iOS app bundles
+ * - Validating app bundle paths
+ * - Providing formatted responses with next steps
  */
 
 import { z } from 'zod';

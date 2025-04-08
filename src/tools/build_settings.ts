@@ -1,5 +1,15 @@
 /**
  * Build Settings and Scheme Tools - Tools for viewing build settings and listing schemes
+ *
+ * This module provides tools for retrieving build settings and listing available schemes
+ * from Xcode projects and workspaces. These tools are useful for debugging and exploring
+ * project configuration.
+ *
+ * Responsibilities:
+ * - Listing available schemes in Xcode projects and workspaces
+ * - Retrieving detailed build settings for specific schemes
+ * - Providing formatted output for build settings
+ * - Supporting both project and workspace-based operations
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

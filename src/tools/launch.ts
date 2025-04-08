@@ -1,5 +1,15 @@
 /**
- * Launch Tools - Tools for launching macOS applications
+ * Launch Tools - Tools for launching macOS and iOS applications
+ *
+ * This module provides tools for launching applications on macOS and in iOS simulators.
+ * It handles the platform-specific launch commands and provides appropriate validation
+ * and error handling.
+ *
+ * Responsibilities:
+ * - Launching macOS applications using the 'open' command
+ * - Launching iOS applications in simulators using 'simctl launch'
+ * - Validating application paths and bundle identifiers
+ * - Supporting command-line arguments for launched applications
  */
 
 import { z } from 'zod';
