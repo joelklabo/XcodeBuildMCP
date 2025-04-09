@@ -43,6 +43,7 @@ Critically, this MCP enables AI agents to independently validate code changes by
 The XcodeBuildMCP server provides the following tool capabilities:
 
 ### Xcode project management
+- **Discover Projects**: Xcode projects and workspaces discovery
 - **Build Operations**: Platform-specific build tools for macOS, iOS simulator, and iOS device targets
 - **Project Information**: Tools to list schemes and show build settings for Xcode projects and workspaces
 - **Clean Operations**: Clean build products using xcodebuild's native clean action
@@ -54,13 +55,6 @@ The XcodeBuildMCP server provides the following tool capabilities:
 ### App utilities
 - **Bundle ID Extraction**: Extract bundle identifiers from iOS and macOS app bundles
 - **App Launching**: Launch built applications on both simulators and macOS
-
-### Operation Progress
-- **Real-time Feedback**: Get detailed progress updates during long-running operations
-- **Build Phase Tracking**: Monitor compilation, linking, and code signing phases
-- **Status Reporting**: View operation status, estimated progress, and error information
-- [Learn more about progress updates](docs/progress-updates.md)
-
 
 ## Getting started
 
