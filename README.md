@@ -51,6 +51,7 @@ The XcodeBuildMCP server provides the following tool capabilities:
 ### Simulator management
 - **Simulator Control**: List, boot, and open iOS simulators 
 - **App Deployment**: Install and launch apps on iOS simulators
+- **Log Capture**: Capture run-time logs from a simulator
 
 ### App utilities
 - **Bundle ID Extraction**: Extract bundle identifiers from iOS and macOS app bundles
@@ -164,13 +165,6 @@ To configure your MCP client to use the local XcodeBuildMCP server, add the foll
     }
   }
 }
-```
-
-Remember after making changes to the server implemetation you'll need to rebuild and restart the server.
-
-```bash
-npm run build
-node build/index.js
 ```
 
 ### Debugging

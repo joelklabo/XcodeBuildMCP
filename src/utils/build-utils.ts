@@ -184,10 +184,25 @@ export async function executeXcodeBuild(
 2. Get Bundle ID: get_ios_bundle_id`;
       } else if (isSimulatorPlatform) {
         const idOrName = platformOptions.simulatorId ? 'id' : 'name';
+        const simIdParam = platformOptions.simulatorId ? 'simulatorId' : 'simulatorName';
+        const simIdValue = platformOptions.simulatorId || platformOptions.simulatorName;
+
         additionalInfo = `Next Steps:
-1. Get App Path: get_simulator_app_path_by_${idOrName}_...
-2. Boot Simulator
-3. Install & Launch App`;
+1. Get App Path: get_simulator_app_path_by_${idOrName}_${params.workspacePath ? 'workspace' : 'project'}({ ${simIdParam}: '${simIdValue}', scheme: '${params.scheme}' })
+2. Get Bundle ID: get_ios_bundle_id({ appPath: 'APP_PATH_FROM_STEP_1' })
+3. Choose one of the following options:
+   - Option 1: Launch app normally:
+     launch_app_in_simulator({ simulatorUuid: 'SIMULATOR_UUID', bundleId: 'APP_BUNDLE_ID' })
+   - Option 2: Launch app with logs (captures both console and structured logs):
+     launch_app_with_logs_in_simulator({ simulatorUuid: 'SIMULATOR_UUID', bundleId: 'APP_BUNDLE_ID' })
+   - Option 3: Launch app normally, then capture structured logs only:
+     launch_app_in_simulator({ simulatorUuid: 'SIMULATOR_UUID', bundleId: 'APP_BUNDLE_ID' })
+     start_simulator_log_capture({ simulatorUuid: 'SIMULATOR_UUID', bundleId: 'APP_BUNDLE_ID' })
+   - Option 4: Launch app normally, then capture all logs (will restart app):
+     launch_app_in_simulator({ simulatorUuid: 'SIMULATOR_UUID', bundleId: 'APP_BUNDLE_ID' })
+     start_simulator_log_capture({ simulatorUuid: 'SIMULATOR_UUID', bundleId: 'APP_BUNDLE_ID', captureConsole: true })
+
+When done capturing logs, use: stop_and_get_simulator_log({ logSessionId: 'SESSION_ID' })`;
       }
     }
 

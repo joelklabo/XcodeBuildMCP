@@ -13,12 +13,14 @@
  */
 
 import { z } from 'zod';
+import { execSync } from 'child_process';
 import { log } from '../utils/logger.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { executeXcodeCommand } from '../utils/xcode.js';
 import { validateRequiredParam, validateFileExists } from '../utils/validation.js';
 import { ToolResponse } from '../types/common.js';
-import { execSync } from 'child_process';
+import { createTextContent } from './common.js';
+import { startLogCapture } from '../utils/log_capture.js';
 
 /**
  * Boots an iOS simulator. IMPORTANT: You MUST provide the simulatorUuid parameter. Example: boot_simulator({ simulatorUuid: 'YOUR_UUID_HERE' }) Note: In some environments, this tool may be prefixed as mcp0_boot_simulator.
@@ -60,9 +62,16 @@ export function registerBootSimulatorTool(server: McpServer): void {
             {
               type: 'text',
               text: `Simulator booted successfully. Next steps:
-1. Open the Simulator app: open_simulator({})
+1. Open the Simulator app: open_simulator({ enabled: true })
 2. Install an app: install_app_in_simulator({ simulatorUuid: "${params.simulatorUuid}", appPath: "PATH_TO_YOUR_APP" })
-3. Launch an app: launch_app_in_simulator({ simulatorUuid: "${params.simulatorUuid}", bundleId: "YOUR_APP_BUNDLE_ID" })`,
+3. Launch an app: launch_app_in_simulator({ simulatorUuid: "${params.simulatorUuid}", bundleId: "YOUR_APP_BUNDLE_ID" })
+4. Log capture options:
+   - Option 1: Capture structured logs only (app continues running):
+     start_simulator_log_capture({ simulatorUuid: "${params.simulatorUuid}", bundleId: "YOUR_APP_BUNDLE_ID" })
+   - Option 2: Capture both console and structured logs (app will restart):
+     start_simulator_log_capture({ simulatorUuid: "${params.simulatorUuid}", bundleId: "YOUR_APP_BUNDLE_ID", captureConsole: true })
+   - Option 3: Launch app with logs in one step:
+     launch_app_with_logs_in_simulator({ simulatorUuid: "${params.simulatorUuid}", bundleId: "YOUR_APP_BUNDLE_ID" })`,
             },
           ],
         };
@@ -85,14 +94,9 @@ export function registerBootSimulatorTool(server: McpServer): void {
 export function registerListSimulatorsTool(server: McpServer): void {
   server.tool(
     'list_simulators',
-    'Lists available iOS simulators with their UUIDs. IMPORTANT: You MUST provide an empty object {} as parameters. Example: list_simulators({})',
+    'Lists available iOS simulators with their UUIDs. ',
     {
-      _dummy: z
-        .boolean()
-        .optional()
-        .describe(
-          'This is a dummy parameter. You must still provide an empty object {}. Example: list_simulators({})',
-        ),
+      enabled: z.boolean(),
     },
     async (): Promise<ToolResponse> => {
       log('info', 'Starting xcrun simctl list devices request');
@@ -262,7 +266,7 @@ export function registerInstallAppInSimulatorTool(server: McpServer): void {
 export function registerLaunchAppInSimulatorTool(server: McpServer): void {
   server.tool(
     'launch_app_in_simulator',
-    "Launches an app in an iOS simulator. IMPORTANT: You MUST provide both the simulatorUuid and bundleId parameters. Example: launch_app_in_simulator({ simulatorUuid: 'YOUR_UUID_HERE', bundleId: 'com.example.MyApp' })",
+    "Launches an app in an iOS simulator. IMPORTANT: You MUST provide both the simulatorUuid and bundleId parameters.\n\nNote: You must install the app in the simulator before launching. The typical workflow is: build → install → launch. Example: launch_app_in_simulator({ simulatorUuid: 'YOUR_UUID_HERE', bundleId: 'com.example.MyApp' })",
     {
       simulatorUuid: z
         .string()
@@ -284,6 +288,43 @@ export function registerLaunchAppInSimulatorTool(server: McpServer): void {
       }
 
       log('info', `Starting xcrun simctl launch request for simulator ${params.simulatorUuid}`);
+
+      // Check if the app is installed in the simulator
+      try {
+        const getAppContainerCmd = [
+          'xcrun',
+          'simctl',
+          'get_app_container',
+          params.simulatorUuid,
+          params.bundleId,
+          'app',
+        ];
+        const getAppContainerResult = await executeXcodeCommand(
+          getAppContainerCmd,
+          'Check App Installed',
+        );
+        if (!getAppContainerResult.success) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `App is not installed on the simulator. Please use install_app_in_simulator before launching.\n\nWorkflow: build → install → launch.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } catch {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `App is not installed on the simulator (check failed). Please use install_app_in_simulator before launching.\n\nWorkflow: build → install → launch.`,
+            },
+          ],
+          isError: true,
+        };
+      }
 
       try {
         const command = ['xcrun', 'simctl', 'launch', params.simulatorUuid, params.bundleId];
@@ -313,7 +354,17 @@ export function registerLaunchAppInSimulatorTool(server: McpServer): void {
             },
             {
               type: 'text',
-              text: `Next Step: Make sure the Simulator app is open to see the running app: open_simulator({})`,
+              text: `Next Steps:
+1. You can now interact with the app in the simulator.
+2. Log capture options:
+   - Option 1: Capture structured logs only (app continues running):
+     start_simulator_log_capture({ simulatorUuid: "${params.simulatorUuid}", bundleId: "${params.bundleId}" })
+   - Option 2: Capture both console and structured logs (app will restart):
+     start_simulator_log_capture({ simulatorUuid: "${params.simulatorUuid}", bundleId: "${params.bundleId}", captureConsole: true })
+   - Option 3: Restart with logs in one step:
+     launch_app_with_logs_in_simulator({ simulatorUuid: "${params.simulatorUuid}", bundleId: "${params.bundleId}" })
+
+3. When done with any option, use: stop_and_get_simulator_log({ logSessionId: 'SESSION_ID' })`,
             },
           ],
         };
@@ -333,17 +384,62 @@ export function registerLaunchAppInSimulatorTool(server: McpServer): void {
   );
 }
 
+export function registerLaunchAppWithLogsInSimulatorTool(server: McpServer): void {
+  server.tool(
+    'launch_app_with_logs_in_simulator',
+    'Launches an app in an iOS simulator and captures its logs.',
+    {
+      simulatorUuid: z
+        .string()
+        .describe('UUID of the simulator to use (obtained from list_simulators)'),
+      bundleId: z
+        .string()
+        .describe("Bundle identifier of the app to launch (e.g., 'com.example.MyApp')"),
+      args: z.array(z.string()).optional().describe('Additional arguments to pass to the app'),
+    },
+    async (params): Promise<ToolResponse> => {
+      const simulatorUuidValidation = validateRequiredParam('simulatorUuid', params.simulatorUuid);
+      if (!simulatorUuidValidation.isValid) {
+        return simulatorUuidValidation.errorResponse!;
+      }
+
+      const bundleIdValidation = validateRequiredParam('bundleId', params.bundleId);
+      if (!bundleIdValidation.isValid) {
+        return bundleIdValidation.errorResponse!;
+      }
+
+      log('info', `Starting app launch with logs for simulator ${params.simulatorUuid}`);
+
+      // Start log capture session
+      const { sessionId, error } = await startLogCapture({
+        simulatorUuid: params.simulatorUuid,
+        bundleId: params.bundleId,
+        captureConsole: true,
+      });
+      if (error) {
+        return {
+          content: [createTextContent(`App was launched but log capture failed: ${error}`)],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          createTextContent(
+            `App launched successfully in simulator ${params.simulatorUuid} with log capture enabled.\n\nLog capture session ID: ${sessionId}\n\nNext Steps:\n1. Interact with your app in the simulator.\n2. Use 'stop_and_get_simulator_log({ logSessionId: "${sessionId}" })' to stop capture and retrieve logs.`,
+          ),
+        ],
+      };
+    },
+  );
+}
+
 export function registerOpenSimulatorTool(server: McpServer): void {
   server.tool(
     'open_simulator',
-    'Opens the iOS Simulator app. IMPORTANT: You MUST provide an empty object {} as parameters. Example: open_simulator({})',
+    'Opens the iOS Simulator app.',
     {
-      _dummy: z
-        .boolean()
-        .optional()
-        .describe(
-          'This is a dummy parameter. You must still provide an empty object {}. Example: open_simulator({})',
-        ),
+      enabled: z.boolean(),
     },
     async (): Promise<ToolResponse> => {
       log('info', 'Starting open simulator request');
@@ -368,6 +464,19 @@ export function registerOpenSimulatorTool(server: McpServer): void {
             {
               type: 'text',
               text: `Simulator app opened successfully`,
+            },
+            {
+              type: 'text',
+              text: `Next Steps:
+1. Boot a simulator if needed: boot_simulator({ simulatorUuid: 'UUID_FROM_LIST_SIMULATORS' })
+2. Launch your app and interact with it
+3. Log capture options:
+   - Option 1: Capture structured logs only (app continues running):
+     start_simulator_log_capture({ simulatorUuid: 'UUID', bundleId: 'YOUR_APP_BUNDLE_ID' })
+   - Option 2: Capture both console and structured logs (app will restart):
+     start_simulator_log_capture({ simulatorUuid: 'UUID', bundleId: 'YOUR_APP_BUNDLE_ID', captureConsole: true })
+   - Option 3: Launch app with logs in one step:
+     launch_app_with_logs_in_simulator({ simulatorUuid: 'UUID', bundleId: 'YOUR_APP_BUNDLE_ID' })`,
             },
           ],
         };

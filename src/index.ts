@@ -55,6 +55,7 @@ import {
   registerOpenSimulatorTool,
   registerInstallAppInSimulatorTool,
   registerLaunchAppInSimulatorTool,
+  registerLaunchAppWithLogsInSimulatorTool,
 } from './tools/simulator.js';
 
 // Import bundle ID tools
@@ -71,6 +72,12 @@ import { registerDiscoverProjectsTool } from './tools/discover_projects.js';
 
 // Import utilities
 import { log } from './utils/logger.js';
+
+// Import log capture tools
+import {
+  registerStartSimulatorLogCaptureTool,
+  registerStopAndGetSimulatorLogTool,
+} from './tools/log.js';
 
 /**
  * Main function to start the server
@@ -118,6 +125,7 @@ async function main(): Promise<void> {
     // Register App installation and launch tools
     registerInstallAppInSimulatorTool(server);
     registerLaunchAppInSimulatorTool(server);
+    registerLaunchAppWithLogsInSimulatorTool(server);
 
     // Register Bundle ID tools
     registerGetMacOSBundleIdTool(server);
@@ -129,6 +137,10 @@ async function main(): Promise<void> {
     // Register build and run tools
     registerMacOSBuildAndRunTools(server);
     registerIOSSimulatorBuildAndRunTools(server);
+
+    // Register log capture tools
+    registerStartSimulatorLogCaptureTool(server);
+    registerStopAndGetSimulatorLogTool(server);
 
     // Start the server
     await startServer(server);

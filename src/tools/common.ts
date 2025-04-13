@@ -50,10 +50,6 @@ export const appPathSchema = z
 export const bundleIdSchema = z
   .string()
   .describe("Bundle identifier of the app (e.g., 'com.example.MyApp')");
-export const dummySchema = z
-  .boolean()
-  .optional()
-  .describe('This is a dummy parameter. You must still provide an empty object {}.');
 export const launchArgsSchema = z
   .array(z.string())
   .optional()

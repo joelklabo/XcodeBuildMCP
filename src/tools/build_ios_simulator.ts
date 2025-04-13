@@ -324,7 +324,17 @@ async function _handleIOSSimulatorBuildAndRunLogic(params: {
           text: `✅ iOS simulator build and run succeeded for scheme ${params.scheme} targeting ${target}.
           
 The app (${bundleId}) is now running in the iOS Simulator. 
-If you don't see the simulator window, it may be hidden behind other windows. The Simulator app should be open.`,
+If you don't see the simulator window, it may be hidden behind other windows. The Simulator app should be open.
+
+Next Steps:
+- Option 1: Capture structured logs only (app continues running):
+  start_simulator_log_capture({ simulatorUuid: '${simulatorUuid}', bundleId: '${bundleId}' })
+- Option 2: Capture both console and structured logs (app will restart):
+  start_simulator_log_capture({ simulatorUuid: '${simulatorUuid}', bundleId: '${bundleId}', captureConsole: true })
+- Option 3: Launch app with logs in one step (for a fresh start):
+  launch_app_with_logs_in_simulator({ simulatorUuid: '${simulatorUuid}', bundleId: '${bundleId}' })
+
+When done with any option, use: stop_and_get_simulator_log({ logSessionId: 'SESSION_ID' })`,
         },
       ],
     };
