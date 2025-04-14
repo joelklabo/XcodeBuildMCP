@@ -26,9 +26,8 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 
 This project implements an MCP server that exposes Xcode operations as tools that can be invoked by AI agents via the MCP protocol. It enables programmatic interaction with Xcode projects through a standardised interface, optimised for agent-driven development workflows.
 
-
-https://github.com/user-attachments/assets/2da9d49c-b1d6-47c1-9f1e-ffdf71d8a09a
-<caption>Demo showing Claude Code building and launching a macOS app.</caption>
+![xcodebuildmcp2](https://github.com/user-attachments/assets/8961d5db-f7ed-4e60-bbb8-48bfd0bc1353)
+<caption>Using Cursor to build, install, and launch an app on the iOS simulator while capturing logs at run-time.</caption>
 
 ## Why?
 
