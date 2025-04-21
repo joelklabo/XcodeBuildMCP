@@ -79,6 +79,7 @@ import {
   registerStopAndGetSimulatorLogTool,
 } from './tools/log.js';
 
+import { version } from './version.js';
 /**
  * Main function to start the server
  */
@@ -146,7 +147,7 @@ async function main(): Promise<void> {
     await startServer(server);
 
     // Log successful startup
-    log('info', 'XcodeBuildMCP server started successfully');
+    log('info', `XcodeBuildMCP server (version ${version}) started successfully`);
   } catch (error) {
     console.error('Fatal error in main():', error);
     process.exit(1);
