@@ -9,16 +9,20 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 - [Features](#features)
 - [Getting started](#getting-started)
   - [Prerequisites](#prerequisites)
-  - [One-line setup with mise x](#one-line-setup-with-mise-x)
+  - [One-line setup with mise](#one-line-setup-with-mise)
   - [Configure MCP clients](#configure-mcp-clients)
 - [Demos](#demos)
   - [Building and running iOS app in Cursor](#building-and-running-ios-app-in-cursor)
   - [Building and running iOS app in Claude Code](#building-and-running-ios-app-in-claude-code)
-- [Local development setup](#local-development-setup)
-  - [Prerequisites](#prerequisites-1)
-  - [Installation](#installation)
-  - [Configure your MCP client](#configure-your-mcp-client)
-  - [Debugging](#debugging)
+- [Contributing](#contributing)
+  - [Local development setup](#local-development-setup)
+    - [Prerequisites](#prerequisites-2)
+    - [Installation](#installation)
+    - [Configure your MCP client](#configure-your-mcp-client-1)
+    - [Debugging](#debugging)
+  - [Making changes](#making-changes)
+  - [Testing](#testing)
+  - [Submitting](#submitting)
 - [Licence](#licence)
 
 
@@ -60,14 +64,11 @@ The XcodeBuildMCP server provides the following tool capabilities:
 
 ### Prerequisites
 
-- Xcode command-line tools
-- Node.js (v16 or later)
-- npm
+- macOS 14.5 or later
+- Xcode 16.x or later
+- mise
 
-> [!NOTE]
-> If you are using mise, you can skip the Node.js and npm installation steps.
-
-### One-line setup with mise x
+### One-line setup with mise
 
 To install mise:
 ```bash
@@ -82,7 +83,7 @@ For more information about mise, visit the [official documentation](https://mise
 
 ### Configure MCP clients
 
-Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the XcodeBuildMCP server by adding the following configuration:
+Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the XcodeBuildMCP server by adding the following configuration, changing the version number to match the version you wish to use:
 
 ```json
 {
@@ -91,7 +92,7 @@ Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the Xc
       "command": "mise",
       "args": [
         "x",
-        "npm:xcodebuildmcp@latest",
+        "npm:xcodebuildmcp@1.1.2",
         "--",
         "xcodebuildmcp"
       ]
@@ -100,20 +101,8 @@ Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the Xc
 }
 ```
 
-Or, if you have an existing Node.js environment, you can use npx instead of mise:
-
-```json
-{
-  "mcpServers": {
-    "XcodeBuildMCP": {
-      "command": "npx",
-      "args": [
-        "xcodebuildmcp"
-      ]
-    }
-  }
-}
-```
+> [!NOTE]
+> When using mise avoid using the @latest tag as mise will cache the package and may not update to the latest version, instead prefer an explicit version number.
 
 ## Demos
 
@@ -125,15 +114,20 @@ https://github.com/user-attachments/assets/b9d334b5-7f28-47fc-9d66-28061bc701b4
 https://github.com/user-attachments/assets/e3c08d75-8be6-4857-b4d0-9350b26ef086
 
 
-## Local development setup
+## Contributing
 
-### Prerequisites
+Contributions are welcome! Here's how you can help improve XcodeBuildMCP.
+
+### Local development setup
+
+#### Prerequisites
+
+In addition to the prerequisites mentioned in the [Getting started](#getting-started) section, you will also need:
 
 - Node.js (v16 or later)
 - npm
-- Xcode command-line tools
 
-### Installation
+#### Installation
 
 1. Clone the repository
 2. Install dependencies:
@@ -149,9 +143,9 @@ https://github.com/user-attachments/assets/e3c08d75-8be6-4857-b4d0-9350b26ef086
    node build/index.js
    ```
 
-### Configure your MCP client
+#### Configure your MCP client
 
-To configure your MCP client to use the local XcodeBuildMCP server, add the following configuration:
+To configure your MCP client to use your local XcodeBuildMCP server you can use the following configuration:
 
 ```json
 {
@@ -166,13 +160,36 @@ To configure your MCP client to use the local XcodeBuildMCP server, add the foll
 }
 ```
 
-### Debugging
+#### Debugging
 
 You can use MCP Inspector via:
 
 ```bash
 npx @modelcontextprotocol/inspector node build/index.js
-```   
+```
+
+### Making changes
+
+1. Fork the repository and create a new branch
+2. Follow the TypeScript best practices and existing code style
+3. Add proper parameter validation and error handling
+
+### Testing
+
+1. Build the project with `npm run build`
+2. Test your changes with MCP Inspector
+3. Verify tools work correctly with different MCP clients
+
+### Submitting
+
+1. Run `npm run lint` to check for linting issues (use `npm run lint:fix` to auto-fix)
+2. Run `npm run format:check` to verify formatting (use `npm run format` to fix)
+3. Update documentation if you've added or modified features
+4. Add your changes to the CHANGELOG.md file
+5. Push your changes and create a pull request with a clear description
+6. Link any related issues
+
+For major changes or new features, please open an issue first to discuss your proposed changes.
 
 ## Licence
 

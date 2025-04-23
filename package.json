@@ -7,7 +7,7 @@
     "xcodebuildmcp": "./build/index.js"
   },
   "scripts": {
-    "prebuild": "node -p \"'export const version = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
+    "prebuild": "echo \"export const version = '$npm_package_version';\" > src/version.ts",
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "lint": "eslint 'src/**/*.{js,ts}'",
     "lint:fix": "eslint 'src/**/*.{js,ts}' --fix",

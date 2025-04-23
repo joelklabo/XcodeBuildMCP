@@ -12,6 +12,9 @@ fi
 echo "🔧 Setting version to $VERSION..."
 npm version "$VERSION" --no-git-tag-version
 
+echo "📝 Updating version in README.md..."
+sed -i '' "s/@[0-9]*\.[0-9]*\.[0-9]*/@$VERSION/g" README.md
+
 echo "🛠 Running build..."
 npm run build
 
