@@ -27,7 +27,7 @@ body:
         - Managing multiple simulator configurations
         - Automating complex Xcode workflows
     validations:
-      required: true
+      required: false
       
   - type: textarea
     id: example-interactions
@@ -38,4 +38,4 @@ body:
         You: [Example request to the AI]
         AI: [Desired response/action]
     validations:
-      required: true
+      required: false
