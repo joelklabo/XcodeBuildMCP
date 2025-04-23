@@ -80,6 +80,10 @@ import {
 } from './tools/log.js';
 
 import { version } from './version.js';
+
+// Import screenshot tool
+import { registerTakeScreenshotTool } from './tools/screenshot.js';
+
 /**
  * Main function to start the server
  */
@@ -142,6 +146,9 @@ async function main(): Promise<void> {
     // Register log capture tools
     registerStartSimulatorLogCaptureTool(server);
     registerStopAndGetSimulatorLogTool(server);
+
+    // Register screenshot tool
+    registerTakeScreenshotTool(server);
 
     // Start the server
     await startServer(server);
