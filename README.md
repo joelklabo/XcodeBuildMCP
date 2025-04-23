@@ -102,7 +102,10 @@ Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the Xc
 ```
 
 > [!NOTE]
-> When using mise avoid using the @latest tag as mise will cache the package and may not update to the latest version, instead prefer an explicit version number.
+> When using mise avoid using the @latest tag as mise will cache the package and may not update to the latest version automatically, instead prefer an explicit version number.
+
+> [!IMPORTANT]
+> Please note that XcodeBuildMCP will request xcodebuild to skip macro validation. This is to avoid errors when building projects that use Swift Macros. 
 
 ## Demos
 

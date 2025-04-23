@@ -74,6 +74,7 @@ export async function executeXcodeBuild(
 
     command.push('-scheme', params.scheme);
     command.push('-configuration', params.configuration);
+    command.push('-skipMacroValidation');
 
     // Construct destination string based on platform
     let destinationString: string;
