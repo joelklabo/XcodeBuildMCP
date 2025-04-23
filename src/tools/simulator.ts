@@ -21,6 +21,7 @@ import { validateRequiredParam, validateFileExists } from '../utils/validation.j
 import { ToolResponse } from '../types/common.js';
 import { createTextContent } from './common.js';
 import { startLogCapture } from '../utils/log_capture.js';
+import { registerTakeScreenshotTool } from './screenshot.js';
 
 /**
  * Boots an iOS simulator. IMPORTANT: You MUST provide the simulatorUuid parameter. Example: boot_simulator({ simulatorUuid: 'YOUR_UUID_HERE' }) Note: In some environments, this tool may be prefixed as mcp0_boot_simulator.
@@ -495,3 +496,5 @@ export function registerOpenSimulatorTool(server: McpServer): void {
     },
   );
 }
+
+registerTakeScreenshotTool(server);

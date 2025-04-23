@@ -25,3 +25,13 @@ export function log(level: string, message: string): void {
   const timestamp = new Date().toISOString();
   console.error(`[${timestamp}] [${level.toUpperCase()}] ${message}`);
 }
+
+/**
+ * Log a screenshot operation
+ * @param level The log level (info, warning, error, debug)
+ * @param message The message to log
+ */
+export function logScreenshot(level: string, message: string): void {
+  const timestamp = new Date().toISOString();
+  console.error(`[${timestamp}] [SCREENSHOT] [${level.toUpperCase()}] ${message}`);
+}

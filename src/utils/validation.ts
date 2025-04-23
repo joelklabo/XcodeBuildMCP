@@ -202,5 +202,24 @@ export function validateEnumParam<T>(
   return { isValid: true };
 }
 
+/**
+ * Validates the output path for the screenshot tool
+ * @param outputPath Path where the screenshot will be saved
+ * @returns Validation result
+ */
+export function validateScreenshotOutputPath(outputPath: string): ValidationResult {
+  if (!outputPath.endsWith('.png')) {
+    return {
+      isValid: false,
+      errorResponse: createTextResponse(
+        `Invalid output path: '${outputPath}'. The screenshot output path must end with '.png'.`,
+        true,
+      ),
+    };
+  }
+
+  return { isValid: true };
+}
+
 // Export the ToolResponse type for use in other files
 export { ToolResponse, ValidationResult };
