@@ -30,3 +30,5 @@ echo "📤 Publishing to npm..."
 npm publish
 
 echo "✅ Release v$VERSION complete!"
+echo ""
+echo "📝 Don't forget to update the changelog"

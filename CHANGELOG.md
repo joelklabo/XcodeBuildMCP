@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.2.3] - 2025-04-23
+- Added support for skipping macro validation
+
 ## [v1.2.2] - 2025-04-23
 - Improved log readability with version information for easier debugging
 - Enhanced overall stability and performance
