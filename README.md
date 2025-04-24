@@ -12,7 +12,7 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
   - [One-line setup with mise](#one-line-setup-with-mise)
   - [Configure MCP clients](#configure-mcp-clients)
 - [Demos](#demos)
-  - [Building and running iOS app in Cursor](#building-and-running-ios-app-in-cursor)
+  - [Autonomously fixing build errors in Cursor](#autonomously-fixing-build-errors-in-cursor)
   - [Building and running iOS app in Claude Code](#building-and-running-ios-app-in-claude-code)
 - [Contributing](#contributing)
   - [Local development setup](#local-development-setup)
@@ -109,8 +109,8 @@ Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the Xc
 
 ## Demos
 
-### Building and running iOS app in Cursor
-https://github.com/user-attachments/assets/b9d334b5-7f28-47fc-9d66-28061bc701b4
+### Autonomously fixing build errors in Cursor
+![xcodebuildmcp3](https://github.com/user-attachments/assets/173e6450-8743-4379-a76c-de2dd2b678a3)
 
 
 ### Building and running iOS app in Claude Code
