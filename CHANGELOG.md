@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.2.4] - 2025-04-24
+- Improved xcodebuild reporting of warnings and errors in tool response
+- Refactor build utils and remove redundant code
+
 ## [v1.2.3] - 2025-04-23
 - Added support for skipping macro validation
 
