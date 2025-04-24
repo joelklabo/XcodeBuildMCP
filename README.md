@@ -92,7 +92,7 @@ Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the Xc
       "command": "mise",
       "args": [
         "x",
-        "npm:xcodebuildmcp@1.2.3",
+        "npm:xcodebuildmcp@1.2.4",
         "--",
         "xcodebuildmcp"
       ]
