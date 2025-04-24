@@ -10,7 +10,6 @@
  * - Providing a base error class (XcodeBuildMCPError) for all application errors
  * - Defining specialized error subtypes for different error categories:
  *   - ValidationError: Parameter validation failures
- *   - BuildError: Xcode build process failures
  *   - SystemError: Underlying system/OS issues
  *   - ConfigurationError: Application configuration problems
  *   - SimulatorError: iOS simulator-specific failures
@@ -46,20 +45,6 @@ export class ValidationError extends XcodeBuildMCPError {
     super(message);
     this.name = 'ValidationError';
     Object.setPrototypeOf(this, ValidationError.prototype);
-  }
-}
-
-/**
- * Error thrown when a build operation fails
- */
-export class BuildError extends XcodeBuildMCPError {
-  constructor(
-    message: string,
-    public buildOutput?: string,
-  ) {
-    super(message);
-    this.name = 'BuildError';
-    Object.setPrototypeOf(this, BuildError.prototype);
   }
 }
 

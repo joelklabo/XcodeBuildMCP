@@ -18,33 +18,8 @@
 
 import { log } from './logger.js';
 import { executeXcodeCommand, XcodePlatform, constructDestinationString } from './xcode.js';
-import { ToolResponse } from '../types/common.js';
+import { ToolResponse, SharedBuildParams, PlatformBuildOptions } from '../types/common.js';
 import { createTextResponse } from './validation.js';
-import { BuildError } from './errors.js';
-
-/**
- * Interface for shared build parameters
- */
-export interface SharedBuildParams {
-  workspacePath?: string;
-  projectPath?: string;
-  scheme: string;
-  configuration: string;
-  derivedDataPath?: string;
-  extraArgs?: string[];
-}
-
-/**
- * Interface for platform-specific build options
- */
-export interface PlatformBuildOptions {
-  platform: XcodePlatform;
-  simulatorName?: string;
-  simulatorId?: string;
-  useLatestOS?: boolean;
-  arch?: string;
-  logPrefix: string;
-}
 
 /**
  * Common function to execute an Xcode build command across platforms
@@ -58,8 +33,18 @@ export async function executeXcodeBuild(
   platformOptions: PlatformBuildOptions,
   buildAction: string = 'build',
 ): Promise<ToolResponse> {
-  const warningMessages: { type: 'text'; text: string }[] = [];
-  const warningRegex = /\[warning\]: (.*)/g;
+  // Collect warnings, errors, and stderr messages from the build output
+  const buildMessages: { type: 'text'; text: string }[] = [];
+  function grepWarningsAndErrors(text: string): { type: 'warning' | 'error'; content: string }[] {
+    return text
+      .split('\n')
+      .map((content) => {
+        if (/warning:/i.test(content)) return { type: 'warning', content };
+        if (/error:/i.test(content)) return { type: 'error', content };
+        return null;
+      })
+      .filter(Boolean) as { type: 'warning' | 'error'; content: string }[];
+  }
 
   log('info', `Starting ${platformOptions.logPrefix} ${buildAction} for scheme ${params.scheme}`);
 
@@ -139,29 +124,35 @@ export async function executeXcodeBuild(
 
     const result = await executeXcodeCommand(command, platformOptions.logPrefix);
 
-    // Extract warnings from output
-    let match;
-    while ((match = warningRegex.exec(result.output)) !== null) {
-      warningMessages.push({ type: 'text', text: `⚠️ Warning: ${match[1]}` });
+    // Grep warnings and errors from stdout (build output)
+    const warningOrErrorLines = grepWarningsAndErrors(result.output);
+    warningOrErrorLines.forEach(({ type, content }) => {
+      buildMessages.push({
+        type: 'text',
+        text: type === 'warning' ? `⚠️ Warning: ${content}` : `❌ Error: ${content}`,
+      });
+    });
+
+    // Include all stderr lines as errors
+    if (result.error) {
+      result.error.split('\n').forEach((content) => {
+        if (content.trim()) {
+          buildMessages.push({ type: 'text', text: `❌ [stderr] ${content}` });
+        }
+      });
     }
 
     if (!result.success) {
       log('error', `${platformOptions.logPrefix} ${buildAction} failed: ${result.error}`);
 
-      // Collect error information for BuildError
-      const _buildError = new BuildError(
-        `${buildAction} failed for scheme ${params.scheme}`,
-        result.error,
-      );
-
-      // Create error response with warnings included
+      // Create concise error response with warnings/errors included
       const errorResponse = createTextResponse(
-        `❌ ${platformOptions.logPrefix} ${buildAction} failed for scheme ${params.scheme}. Error: ${result.error}`,
+        `❌ ${platformOptions.logPrefix} ${buildAction} failed for scheme ${params.scheme}.`,
         true,
       );
 
-      if (warningMessages.length > 0 && errorResponse.content) {
-        errorResponse.content.unshift(...warningMessages);
+      if (buildMessages.length > 0 && errorResponse.content) {
+        errorResponse.content.unshift(...buildMessages);
       }
 
       return errorResponse;
@@ -209,7 +200,7 @@ When done capturing logs, use: stop_and_get_simulator_log({ logSessionId: 'SESSI
 
     const successResponse: ToolResponse = {
       content: [
-        ...warningMessages,
+        ...buildMessages,
         {
           type: 'text',
           text: `✅ ${platformOptions.logPrefix} ${buildAction} succeeded for scheme ${params.scheme}.`,

@@ -9,6 +9,8 @@ import SwiftUI
 import OSLog
 
 struct ContentView: View {
+    let x: Bool = true
+    
     var body: some View {
         VStack {
             Image(systemName: "globe")
@@ -22,7 +24,6 @@ struct ContentView: View {
             }
         }
         .padding()
-
     }
 }
 

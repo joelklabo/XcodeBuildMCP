@@ -48,22 +48,43 @@ export type ToolResponseContent = {
 };
 
 /**
- * ToolProgressUpdate - Structure for progress updates during long-running operations
- */
-export interface ToolProgressUpdate {
-  operationId: string;
-  status: 'running' | 'completed' | 'failed';
-  progress?: number; // 0-100 percentage
-  message: string;
-  timestamp: string;
-  details?: string;
-}
-
-/**
  * ValidationResult - Result of parameter validation operations
  */
 export interface ValidationResult {
   isValid: boolean;
   errorResponse?: ToolResponse;
   warningResponse?: ToolResponse;
+}
+
+/**
+ * XcodeCommandResponse - Result of xcodebuild command execution
+ */
+export interface XcodeCommandResponse {
+  success: boolean;
+  output: string;
+  error?: string;
+}
+
+/**
+ * Interface for shared build parameters
+ */
+export interface SharedBuildParams {
+  workspacePath?: string;
+  projectPath?: string;
+  scheme: string;
+  configuration: string;
+  derivedDataPath?: string;
+  extraArgs?: string[];
+}
+
+/**
+ * Interface for platform-specific build options
+ */
+export interface PlatformBuildOptions {
+  platform: XcodePlatform;
+  simulatorName?: string;
+  simulatorId?: string;
+  useLatestOS?: boolean;
+  arch?: string;
+  logPrefix: string;
 }

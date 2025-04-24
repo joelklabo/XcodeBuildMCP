@@ -8,7 +8,6 @@
  * Responsibilities:
  * - Creating and configuring the MCP server instance
  * - Setting up server capabilities and options
- * - Initializing progress reporting services
  * - Managing server lifecycle (start/stop)
  * - Handling transport configuration (stdio)
  */
@@ -16,7 +15,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { log } from '../utils/logger.js';
-import { initProgressService } from '../utils/progress.js';
 import { version } from '../version.js';
 
 /**
@@ -42,9 +40,6 @@ export function createServer(): McpServer {
 
   // Log server initialization
   log('info', `Server initialized (version ${version})`);
-
-  // Initialize the progress service with the server instance
-  initProgressService(server);
 
   return server;
 }
