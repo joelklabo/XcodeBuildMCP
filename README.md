@@ -4,25 +4,31 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 
 ## Table of contents
 
+- [Table of contents](#table-of-contents)
 - [Overview](#overview)
 - [Why?](#why)
 - [Features](#features)
+   * [Xcode project management](#xcode-project-management)
+   * [Simulator management](#simulator-management)
+   * [App utilities](#app-utilities)
 - [Getting started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [One-line setup with mise](#one-line-setup-with-mise)
-  - [Configure MCP clients](#configure-mcp-clients)
+   * [Prerequisites](#prerequisites)
+   * [One-line setup with mise](#one-line-setup-with-mise)
+   * [Configure MCP clients](#configure-mcp-clients)
+   * [Enabling UI Automation (beta)](#enabling-ui-automation-beta)
 - [Demos](#demos)
-  - [Autonomously fixing build errors in Cursor](#autonomously-fixing-build-errors-in-cursor)
-  - [Building and running iOS app in Claude Code](#building-and-running-ios-app-in-claude-code)
+   * [Autonomously fixing build errors in Cursor](#autonomously-fixing-build-errors-in-cursor)
+   * [Building and running iOS app in Claude Code](#building-and-running-ios-app-in-claude-code)
 - [Contributing](#contributing)
-  - [Local development setup](#local-development-setup)
-    - [Prerequisites](#prerequisites-2)
-    - [Installation](#installation)
-    - [Configure your MCP client](#configure-your-mcp-client-1)
-    - [Debugging](#debugging)
-  - [Making changes](#making-changes)
-  - [Testing](#testing)
-  - [Submitting](#submitting)
+   * [Local development setup](#local-development-setup)
+      + [Prerequisites](#prerequisites-1)
+         - [Optional: Enabling UI Automation](#optional-enabling-ui-automation)
+      + [Installation](#installation)
+      + [Configure your MCP client](#configure-your-mcp-client)
+      + [Debugging](#debugging)
+   * [Making changes](#making-changes)
+   * [Testing](#testing)
+   * [Submitting](#submitting)
 - [Licence](#licence)
 
 
@@ -55,6 +61,8 @@ The XcodeBuildMCP server provides the following tool capabilities:
 - **Simulator Control**: List, boot, and open iOS simulators 
 - **App Deployment**: Install and launch apps on iOS simulators
 - **Log Capture**: Capture run-time logs from a simulator
+- **UI Automation**: Interact with simulator UI elements (beta)
+- **Screenshot**: Capture screenshots from a simulator (beta)
 
 ### App utilities
 - **Bundle ID Extraction**: Extract bundle identifiers from iOS and macOS app bundles
@@ -107,6 +115,21 @@ Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the Xc
 > [!IMPORTANT]
 > Please note that XcodeBuildMCP will request xcodebuild to skip macro validation. This is to avoid errors when building projects that use Swift Macros. 
 
+### Enabling UI Automation (beta)
+
+For UI automation features (tap, swipe, screenshot, etc.), you'll need to install Facebook's idb_companion:
+
+```bash
+brew tap facebook/fb
+brew install idb-companion
+```
+
+> [!IMPORTANT]
+> Please note that UI automation features are currently in beta so there might be some rough edges. If you encounter any issues, please report them in the [issue tracker](https://github.com/cameroncooke/XcodeBuildMCP/issues).
+
+> [!NOTE]
+> Displaying images in tool reponses and embedding them in chat context may not be supported by all MCP Clients, it's currently known to be supported in Cursor.
+
 ## Demos
 
 ### Autonomously fixing build errors in Cursor
@@ -129,6 +152,22 @@ In addition to the prerequisites mentioned in the [Getting started](#getting-sta
 
 - Node.js (v16 or later)
 - npm
+
+##### Optional: Enabling UI Automation
+
+When running locally, you'll need to install Facebook's idb tools:
+
+```bash
+# Install idb_companion (required for UI automation)
+brew tap facebook/fb
+brew install idb-companion
+```
+
+Install fb-idb Python package:
+
+```bash
+pip install fb-idb==1.1.7
+```
 
 #### Installation
 

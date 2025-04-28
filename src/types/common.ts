@@ -41,11 +41,18 @@ export interface ToolResponse {
 /**
  * Contents that can be included in a tool response
  */
-export type ToolResponseContent = {
-  type: 'text';
-  text: string;
-  [key: string]: unknown; // Index signature to match ContentItem
-};
+export type ToolResponseContent =
+  | {
+      type: 'text';
+      text: string;
+      [key: string]: unknown; // Index signature to match ContentItem
+    }
+  | {
+      type: 'image';
+      data: string; // Base64-encoded image data (without URI scheme prefix)
+      mimeType: string; // e.g., 'image/png', 'image/jpeg'
+      [key: string]: unknown; // Index signature to match ContentItem
+    };
 
 /**
  * ValidationResult - Result of parameter validation operations

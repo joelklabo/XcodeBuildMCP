@@ -1,3 +1,5 @@
+import { ToolResponse } from '../types/common.js';
+
 /**
  * Error Utilities - Type-safe error hierarchy for the application
  *
@@ -13,6 +15,7 @@
  *   - SystemError: Underlying system/OS issues
  *   - ConfigurationError: Application configuration problems
  *   - SimulatorError: iOS simulator-specific failures
+ *   - IdbError: idb-specific errors
  *
  * The structured hierarchy allows error consumers to handle errors with the
  * appropriate level of specificity using instanceof checks or catch clauses.
@@ -85,5 +88,53 @@ export class SimulatorError extends XcodeBuildMCPError {
     super(message);
     this.name = 'SimulatorError';
     Object.setPrototypeOf(this, SimulatorError.prototype);
+  }
+}
+
+/**
+ * Error thrown for idb-specific errors
+ */
+export class IdbError extends XcodeBuildMCPError {
+  constructor(
+    message: string,
+    public command?: string, // The idb command that failed
+    public idbOutput?: string, // Output from idb
+    public simulatorId?: string,
+  ) {
+    super(message);
+    this.name = 'IdbError';
+    Object.setPrototypeOf(this, IdbError.prototype);
+  }
+}
+
+// Helper to create a standard error response
+export function createErrorResponse(
+  message: string,
+  details?: string,
+  _errorType: string = 'UnknownError',
+): ToolResponse {
+  const detailText = details ? `\nDetails: ${details}` : '';
+  return {
+    content: [
+      {
+        type: 'text',
+        text: `Error: ${message}${detailText}`,
+      },
+    ],
+    isError: true,
+  };
+}
+
+/**
+ * Error class for missing dependencies
+ */
+export class DependencyError extends ConfigurationError {
+  constructor(
+    message: string,
+    public details?: string,
+  ) {
+    super(message);
+    this.name = 'DependencyError';
+    Object.setPrototypeOf(this, DependencyError.prototype);
   }
 }
