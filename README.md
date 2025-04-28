@@ -128,17 +128,19 @@ brew install idb-companion
 > Please note that UI automation features are currently in beta so there might be some rough edges. If you encounter any issues, please report them in the [issue tracker](https://github.com/cameroncooke/XcodeBuildMCP/issues).
 
 > [!NOTE]
-> Displaying images in tool reponses and embedding them in chat context may not be supported by all MCP Clients, it's currently known to be supported in Cursor.
+> Displaying images in tool responses and embedding them in chat context may not be supported by all MCP Clients; it's currently known to be supported in Cursor.
 
 ## Demos
 
 ### Autonomously fixing build errors in Cursor
 ![xcodebuildmcp3](https://github.com/user-attachments/assets/173e6450-8743-4379-a76c-de2dd2b678a3)
 
+### Utilising the new UI automation and screen capture features
+
+![xcodebuildmcp4](https://github.com/user-attachments/assets/17300a18-f47a-428a-aad3-dc094859c1b2)
 
 ### Building and running iOS app in Claude Code
 https://github.com/user-attachments/assets/e3c08d75-8be6-4857-b4d0-9350b26ef086
-
 
 ## Contributing
 
