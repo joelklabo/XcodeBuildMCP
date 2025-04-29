@@ -25,6 +25,9 @@ import {
   registerIOSSimulatorBuildAndRunTools,
 } from './tools/build_ios_simulator.js';
 
+// Import iOS simulator test tools
+import { registerIOSSimulatorTestTools } from './tools/test_ios_simulator.js';
+
 // Import iOS device build tools
 import { registerIOSDeviceBuildTools } from './tools/build_ios_device.js';
 
@@ -142,6 +145,9 @@ async function main(): Promise<void> {
     // Register log capture tools
     registerStartSimulatorLogCaptureTool(server);
     registerStopAndGetSimulatorLogTool(server);
+    
+    // Register test tools
+    registerIOSSimulatorTestTools(server);
 
     // Start the server
     await startServer(server);
