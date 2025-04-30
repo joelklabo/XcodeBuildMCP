@@ -13,10 +13,9 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { XcodePlatform, executeXcodeCommand } from '../utils/xcode.js';
+import { XcodePlatform } from '../utils/xcode.js';
 import { executeXcodeBuild } from '../utils/build-utils.js';
 import { log } from '../utils/logger.js';
-import { createTextResponse } from '../utils/validation.js';
 import { ToolResponse, ToolResponseContent } from '../types/common.js';
 import { 
   registerTool,
