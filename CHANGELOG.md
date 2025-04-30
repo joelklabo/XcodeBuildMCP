@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.3.0] - 2025-04-28
+
+- Added support for interacting with the simulator (tap, swipe etc.)
+- Added support for capturing simulator screenshots
+
+Please note that the UI automation features are an early preview and currently in beta your mileage may vary.
+
 ## [v1.2.4] - 2025-04-24
 - Improved xcodebuild reporting of warnings and errors in tool response
 - Refactor build utils and remove redundant code

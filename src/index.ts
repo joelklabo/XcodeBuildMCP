@@ -82,7 +82,13 @@ import {
   registerStopAndGetSimulatorLogTool,
 } from './tools/log.js';
 
+// Import idb tools
+import { registerIdbTools } from './tools/idb.js';
+
+// Import idb setup utility
+import { setupIdb } from './utils/idb-setup.js';
 import { version } from './version.js';
+
 /**
  * Main function to start the server
  */
@@ -145,6 +151,10 @@ async function main(): Promise<void> {
     // Register log capture tools
     registerStartSimulatorLogCaptureTool(server);
     registerStopAndGetSimulatorLogTool(server);
+
+    // Register idb tools for iOS simulator UI automation
+    setupIdb();
+    registerIdbTools(server);
 
     // Register test tools
     registerIOSSimulatorTestTools(server);

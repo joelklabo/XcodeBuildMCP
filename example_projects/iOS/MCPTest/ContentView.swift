@@ -9,16 +9,21 @@ import SwiftUI
 import OSLog
 
 struct ContentView: View {
+    @State private var text = "Hello, world!"
+
     var body: some View {
         VStack {
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Text(text)
 
             Button("Log something") {
-                Logger.myApp.debug("Oh this is structured logging")
-                debugPrint("I'm just plain old std out :-(")
+                let message = ProcessInfo.processInfo.environment.map { "\($0.key): \($0.value)" }.joined(separator: "\n")
+                Logger.myApp.debug("Environment: \(message)")                
+                debugPrint("Button was pressed")
+
+                text = "You just pressed the button!"
             }
         }
         .padding()
