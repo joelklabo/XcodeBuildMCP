@@ -1,17 +1,17 @@
-## Contributing
+# Contributing
 
 Contributions are welcome! Here's how you can help improve XcodeBuildMCP.
 
-### Local development setup
+## Local development setup
 
-#### Prerequisites
+### Prerequisites
 
-In addition to the prerequisites mentioned in the [Getting started](#getting-started) section, you will also need:
+In addition to the prerequisites mentioned in the [Getting started](README.md/#getting-started) section of the README, you will also need:
 
 - Node.js (v16 or later)
 - npm
 
-##### Optional: Enabling UI Automation
+#### Optional: Enabling UI Automation
 
 When running locally, you'll need to install Facebook's idb tools:
 
@@ -27,7 +27,7 @@ Install fb-idb Python package:
 pip install fb-idb==1.1.7
 ```
 
-#### Installation
+### Installation
 
 1. Clone the repository
 2. Install dependencies:
@@ -43,7 +43,7 @@ pip install fb-idb==1.1.7
    node build/index.js
    ```
 
-#### Configure your MCP client
+### Configure your MCP client
 
 To configure your MCP client to use your local XcodeBuildMCP server you can use the following configuration:
 
@@ -60,7 +60,7 @@ To configure your MCP client to use your local XcodeBuildMCP server you can use 
 }
 ```
 
-#### Debugging
+### Debugging
 
 You can use MCP Inspector via:
 
@@ -68,19 +68,19 @@ You can use MCP Inspector via:
 npx @modelcontextprotocol/inspector node build/index.js
 ```
 
-### Making changes
+## Making changes
 
 1. Fork the repository and create a new branch
 2. Follow the TypeScript best practices and existing code style
 3. Add proper parameter validation and error handling
 
-### Testing
+## Testing
 
 1. Build the project with `npm run build`
 2. Test your changes with MCP Inspector
 3. Verify tools work correctly with different MCP clients
 
-### Submitting
+## Submitting
 
 1. Run `npm run lint` to check for linting issues (use `npm run lint:fix` to auto-fix)
 2. Run `npm run format:check` to verify formatting (use `npm run format` to fix)
@@ -90,3 +90,7 @@ npx @modelcontextprotocol/inspector node build/index.js
 6. Link any related issues
 
 For major changes or new features, please open an issue first to discuss your proposed changes.
+
+## Code of Conduct
+
+Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) and community guidelines.
