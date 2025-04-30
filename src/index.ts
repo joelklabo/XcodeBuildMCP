@@ -145,7 +145,7 @@ async function main(): Promise<void> {
     // Register log capture tools
     registerStartSimulatorLogCaptureTool(server);
     registerStopAndGetSimulatorLogTool(server);
-    
+
     // Register test tools
     registerIOSSimulatorTestTools(server);
 

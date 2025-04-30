@@ -1,10 +1,10 @@
 /**
  * iOS Simulator Test Tools - Tools for running tests on iOS applications in simulators
- * 
+ *
  * This module provides specialized tools for running tests on iOS applications in simulators
  * using xcodebuild test. It supports both workspace and project-based testing with simulator targeting
  * by name or UUID, and includes test failure parsing.
- * 
+ *
  * Responsibilities:
  * - Running tests on iOS applications in simulators from project files and workspaces
  * - Supporting simulator targeting by name or UUID
@@ -17,17 +17,17 @@ import { XcodePlatform } from '../utils/xcode.js';
 import { executeXcodeBuild } from '../utils/build-utils.js';
 import { log } from '../utils/logger.js';
 import { ToolResponse, ToolResponseContent } from '../types/common.js';
-import { 
+import {
   registerTool,
   workspacePathSchema,
   projectPathSchema,
   schemeSchema,
-  configurationSchema, 
+  configurationSchema,
   derivedDataPathSchema,
   extraArgsSchema,
   simulatorNameSchema,
   simulatorIdSchema,
-  useLatestOSSchema
+  useLatestOSSchema,
 } from './common.js';
 
 // --- internal logic ---
@@ -64,25 +64,21 @@ async function _handleIOSSimulatorTestLogic(params: {
   const raw = buildResult.rawOutput ?? '';
   const failures = raw
     .split('\n')
-    .filter(l => /Test Case .* failed/.test(l))
-    .map(l => {
+    .filter((l) => /Test Case .* failed/.test(l))
+    .map((l) => {
       const m = l.match(/Test Case '(.*)' failed \((.*)\)/)!;
       return { testCase: m[1], reason: m[2] };
     });
 
-  const summary = failures.length
-    ? `❌ ${failures.length} test(s) failed`
-    : '✅ All tests passed';
+  const summary = failures.length ? `❌ ${failures.length} test(s) failed` : '✅ All tests passed';
 
-  const content: ToolResponseContent[] = [
-    { type: 'text', text: summary }
-  ];
-  
+  const content: ToolResponseContent[] = [{ type: 'text', text: summary }];
+
   // Add failures as formatted text if any exist
   if (failures.length > 0) {
-    content.push({ 
-      type: 'text', 
-      text: `Test failures:\n${failures.map(f => `- ${f.testCase}: ${f.reason}`).join('\n')}`
+    content.push({
+      type: 'text',
+      text: `Test failures:\n${failures.map((f) => `- ${f.testCase}: ${f.reason}`).join('\n')}`,
     });
   }
 
@@ -113,11 +109,12 @@ export function registerIOSSimulatorTestTools(server: McpServer): void {
       extraArgs: extraArgsSchema,
       useLatestOS: useLatestOSSchema,
     },
-    (params: any) => _handleIOSSimulatorTestLogic({ 
-      ...params, 
-      configuration: params.configuration || defaults.configuration,
-      useLatestOS: params.useLatestOS ?? defaults.useLatestOS
-    })
+    (params: any) =>
+      _handleIOSSimulatorTestLogic({
+        ...params,
+        configuration: params.configuration || defaults.configuration,
+        useLatestOS: params.useLatestOS ?? defaults.useLatestOS,
+      }),
   );
 
   // 2) project + name
@@ -134,11 +131,12 @@ export function registerIOSSimulatorTestTools(server: McpServer): void {
       extraArgs: extraArgsSchema,
       useLatestOS: useLatestOSSchema,
     },
-    (params: any) => _handleIOSSimulatorTestLogic({ 
-      ...params, 
-      configuration: params.configuration || defaults.configuration,
-      useLatestOS: params.useLatestOS ?? defaults.useLatestOS
-    })
+    (params: any) =>
+      _handleIOSSimulatorTestLogic({
+        ...params,
+        configuration: params.configuration || defaults.configuration,
+        useLatestOS: params.useLatestOS ?? defaults.useLatestOS,
+      }),
   );
 
   // 3) workspace + id
@@ -155,11 +153,12 @@ export function registerIOSSimulatorTestTools(server: McpServer): void {
       extraArgs: extraArgsSchema,
       useLatestOS: useLatestOSSchema,
     },
-    (params: any) => _handleIOSSimulatorTestLogic({ 
-      ...params, 
-      configuration: params.configuration || defaults.configuration,
-      useLatestOS: params.useLatestOS ?? defaults.useLatestOS
-    })
+    (params: any) =>
+      _handleIOSSimulatorTestLogic({
+        ...params,
+        configuration: params.configuration || defaults.configuration,
+        useLatestOS: params.useLatestOS ?? defaults.useLatestOS,
+      }),
   );
 
   // 4) project + id
@@ -176,10 +175,11 @@ export function registerIOSSimulatorTestTools(server: McpServer): void {
       extraArgs: extraArgsSchema,
       useLatestOS: useLatestOSSchema,
     },
-    (params: any) => _handleIOSSimulatorTestLogic({ 
-      ...params, 
-      configuration: params.configuration || defaults.configuration,
-      useLatestOS: params.useLatestOS ?? defaults.useLatestOS
-    })
+    (params: any) =>
+      _handleIOSSimulatorTestLogic({
+        ...params,
+        configuration: params.configuration || defaults.configuration,
+        useLatestOS: params.useLatestOS ?? defaults.useLatestOS,
+      }),
   );
 }
