@@ -8,7 +8,7 @@ Contributions are welcome! Here's how you can help improve XcodeBuildMCP.
 
 In addition to the prerequisites mentioned in the [Getting started](README.md/#getting-started) section of the README, you will also need:
 
-- Node.js (v16 or later)
+- Node.js (v18 or later)
 - npm
 
 #### Optional: Enabling UI Automation
