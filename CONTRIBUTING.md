@@ -65,7 +65,28 @@ To configure your MCP client to use your local XcodeBuildMCP server you can use 
 You can use MCP Inspector via:
 
 ```bash
+npm run inspect
+```
+
+or if you prefer the explict command:
+
+```bash
 npx @modelcontextprotocol/inspector node build/index.js
+```
+
+#### Using the diagnostic tool
+
+Running the XcodeBuildMCP server with the environmental variable `XCODEBUILDMCP_DEBUG=true` will expose a new diagnostic tool which you can run using MCP Inspector:
+
+
+```bash
+XCODEBUILDMCP_DEBUG=true npm run inspect
+```
+
+Alternatively, you can run the diagnostic tool directly:
+
+```bash
+node build/diagnostic-cli.js
 ```
 
 ## Making changes

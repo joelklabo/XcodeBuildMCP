@@ -4,15 +4,18 @@
   "main": "build/index.js",
   "type": "module",
   "bin": {
-    "xcodebuildmcp": "./build/index.js"
+    "xcodebuildmcp": "./build/index.js",
+    "xcodebuildmcp-diagnostic": "./build/diagnostic-cli.js"
   },
   "scripts": {
     "prebuild": "echo \"export const version = '$npm_package_version';\" > src/version.ts",
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755') && require('fs').chmodSync('build/diagnostic-cli.js', '755')\"",
     "lint": "eslint 'src/**/*.{js,ts}'",
     "lint:fix": "eslint 'src/**/*.{js,ts}' --fix",
     "format": "prettier --write 'src/**/*.{js,ts}'",
-    "format:check": "prettier --check 'src/**/*.{js,ts}'"
+    "format:check": "prettier --check 'src/**/*.{js,ts}'",
+    "inspect": "npx @modelcontextprotocol/inspector node build/index.js",
+    "diagnostic": "node build/diagnostic-cli.js"
   },
   "files": [
     "build"

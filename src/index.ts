@@ -82,6 +82,9 @@ import {
 // Import idb tools
 import { registerIdbTools } from './tools/idb.js';
 
+// Import diagnostic tool
+import { registerDiagnosticTool } from './tools/diagnostic.js';
+
 // Import idb setup utility
 import { setupIdb } from './utils/idb-setup.js';
 import { version } from './version.js';
@@ -152,6 +155,11 @@ async function main(): Promise<void> {
     // Register idb tools for iOS simulator UI automation
     setupIdb();
     registerIdbTools(server);
+
+    // Register diagnostic tool (only available when XCODEBUILDMCP_DEBUG is set)
+    if (process.env.XCODEBUILDMCP_DEBUG) {
+      registerDiagnosticTool(server);
+    }
 
     // Start the server
     await startServer(server);

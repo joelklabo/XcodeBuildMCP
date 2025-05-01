@@ -4,7 +4,6 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 
 ## Table of contents
 
-- [Table of contents](#table-of-contents)
 - [Overview](#overview)
 - [Why?](#why)
 - [Features](#features)
@@ -16,12 +15,16 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
    * [One-line setup with mise](#one-line-setup-with-mise)
    * [Configure MCP clients](#configure-mcp-clients)
    * [Enabling UI Automation (beta)](#enabling-ui-automation-beta)
+- [Troubleshooting](#troubleshooting)
+   * [Diagnostic Tool](#diagnostic-tool)
+      + [Using with mise](#using-with-mise)
+      + [Using with npx](#using-with-npx)
 - [Demos](#demos)
    * [Autonomously fixing build errors in Cursor](#autonomously-fixing-build-errors-in-cursor)
+   * [Utilising the new UI automation and screen capture features](#utilising-the-new-ui-automation-and-screen-capture-features)
    * [Building and running iOS app in Claude Code](#building-and-running-ios-app-in-claude-code)
 - [Contributing](#contributing)
 - [Licence](#licence)
-
 
 ## Overview
 
@@ -120,6 +123,38 @@ brew install idb-companion
 
 > [!NOTE]
 > Displaying images in tool responses and embedding them in chat context may not be supported by all MCP Clients; it's currently known to be supported in Cursor.
+
+## Troubleshooting
+
+If you encounter issues with XcodeBuildMCP, the diagnostic tool can help identify the problem by providing detailed information about your environment and dependencies.
+
+### Diagnostic Tool
+
+The diagnostic tool is a standalone utility that checks your system configuration and reports on the status of all dependencies required by XcodeBuildMCP. It's particularly useful when reporting issues.
+
+#### Using with mise
+
+```bash
+# Run the diagnostic tool using mise
+mise x npm:xcodebuildmcp@latest -- xcodebuildmcp-diagnostic
+```
+
+#### Using with npx
+
+```bash
+# Run the diagnostic tool using npx
+npx xcodebuildmcp@latest xcodebuildmcp-diagnostic
+```
+
+The diagnostic tool will output comprehensive information about:
+
+- System and Node.js environment
+- Xcode installation and configuration
+- Required dependencies (xcodebuild, idb, etc.)
+- Environment variables affecting XcodeBuildMCP
+- Feature availability status
+
+When reporting issues on GitHub, please include the full output from the diagnostic tool to help with troubleshooting.
 
 ## Demos
 
