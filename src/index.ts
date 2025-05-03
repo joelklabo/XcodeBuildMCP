@@ -13,8 +13,8 @@
  * - Handling server lifecycle events
  */
 
-// Import Sentry instrumentation at the very top
-import './instrument.js';
+// Import Sentry instrumentation
+import './utils/sentry.js';
 
 // Import server components
 import { createServer, startServer } from './server/server.js';

@@ -118,6 +118,7 @@ function getEnvironmentVariables(): Record<string, string | undefined> {
     'TMPDIR',
     'PYTHONPATH',
     'NODE_ENV',
+    'SENTRY_DISABLED',
   ];
 
   const envVars: Record<string, string | undefined> = {};
@@ -261,6 +262,9 @@ export async function runDiagnosticTool(_params: unknown): Promise<ToolResponse>
     `\n## Tool Availability Summary`,
     `- Build Tools: ${!('error' in diagnosticInfo.xcode) ? '\u2705 Available' : '\u274c Not available'}`,
     `- UI Automation Tools: ${diagnosticInfo.features.idb.uiAutomationSupported ? '\u2705 Available' : '\u274c Not available'}`,
+
+    `\n### Sentry`,
+    `- Sentry enabled: ${diagnosticInfo.environmentVariables.SENTRY_DISABLED !== 'true' ? '✅ Yes' : '❌ No'}`,
 
     `\n## Troubleshooting Tips`,
     `- If UI automation tools are not available, install idb: \`pip3 install fb-idb\``,

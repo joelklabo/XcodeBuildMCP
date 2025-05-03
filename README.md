@@ -21,6 +21,9 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
    * [Diagnostic Tool](#diagnostic-tool)
       + [Using with mise](#using-with-mise)
       + [Using with npx](#using-with-npx)
+- [Privacy](#privacy)
+   * [What is sent to Sentry?](#what-is-sent-to-sentry)
+   * [Opting Out of Sentry](#opting-out-of-sentry)
 - [Demos](#demos)
    * [Autonomously fixing build errors in Cursor](#autonomously-fixing-build-errors-in-cursor)
    * [Utilising the new UI automation and screen capture features](#utilising-the-new-ui-automation-and-screen-capture-features)
@@ -157,6 +160,37 @@ The diagnostic tool will output comprehensive information about:
 - Feature availability status
 
 When reporting issues on GitHub, please include the full output from the diagnostic tool to help with troubleshooting.
+
+## Privacy
+
+This project uses [Sentry](https://sentry.io/) for error monitoring and diagnostics. Sentry helps us track issues, crashes, and unexpected errors to improve the reliability and stability of XcodeBuildMCP.
+
+### What is sent to Sentry?
+- Only error-level logs and diagnostic information are sent to Sentry by default.
+- Error logs may include details such as error messages, stack traces, and (in some cases) file paths or project names. You can review the sources in this repository to see exactly what is logged.
+
+### Opting Out of Sentry
+- If you do not wish to send error logs to Sentry, you can opt out by setting the environment variable `SENTRY_DISABLED=true`.
+
+Example MCP client configuration:
+```bash
+{
+  "mcpServers": {
+    "XcodeBuildMCP": {
+      "command": "mise",
+      "args": [
+        "x",
+        "npm:xcodebuildmcp@1.3.2",
+        "--",
+        "xcodebuildmcp"
+      ],
+      "env": {
+        "SENTRY_DISABLED": "true"
+      }        
+    }
+  }
+}
+```
 
 ## Demos
 

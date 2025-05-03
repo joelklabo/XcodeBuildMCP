@@ -19,6 +19,8 @@
 
 import * as Sentry from '@sentry/node';
 
+const SENTRY_DISABLED = process.env.SENTRY_DISABLED === 'true';
+
 /**
  * Log a message with the specified level
  * @param level The log level (info, warning, error, debug)
@@ -29,8 +31,8 @@ export function log(level: string, message: string, context?: Record<string, unk
   const timestamp = new Date().toISOString();
   console.error(`[${timestamp}] [${level.toUpperCase()}] ${message}`);
 
-  // Send error logs to Sentry
-  if (level.toLowerCase() === 'error') {
+  // Send error logs to Sentry unless disabled
+  if (!SENTRY_DISABLED && level.toLowerCase() === 'error') {
     Sentry.captureMessage(message, {
       level: 'error',
       extra: context,
