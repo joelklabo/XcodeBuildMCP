@@ -263,7 +263,7 @@ export async function runDiagnosticTool(_params: unknown): Promise<ToolResponse>
     `- Build Tools: ${!('error' in diagnosticInfo.xcode) ? '\u2705 Available' : '\u274c Not available'}`,
     `- UI Automation Tools: ${diagnosticInfo.features.idb.uiAutomationSupported ? '\u2705 Available' : '\u274c Not available'}`,
 
-    `\n### Sentry`,
+    `\n## Sentry`,
     `- Sentry enabled: ${diagnosticInfo.environmentVariables.SENTRY_DISABLED !== 'true' ? '✅ Yes' : '❌ No'}`,
 
     `\n## Troubleshooting Tips`,
