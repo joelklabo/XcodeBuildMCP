@@ -22,7 +22,7 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
 - [Demos](#demos)
    * [Autonomously fixing build errors in Cursor](#autonomously-fixing-build-errors-in-cursor)
    * [Utilising the new UI automation and screen capture features](#utilising-the-new-ui-automation-and-screen-capture-features)
-   * [Building and running iOS app in Claude Code](#building-and-running-ios-app-in-claude-code)
+   * [Building and running iOS app in Claude Desktop](#building-and-running-ios-app-in-claude-desktop)
 - [Contributing](#contributing)
 - [Licence](#licence)
 
