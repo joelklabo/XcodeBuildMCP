@@ -51,5 +51,5 @@ export function createServer(): McpServer {
 export async function startServer(server: McpServer): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('XcodeBuildMCP Server running on stdio');
+  log('info', 'XcodeBuildMCP Server running on stdio');
 }

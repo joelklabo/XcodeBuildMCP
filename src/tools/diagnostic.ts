@@ -29,7 +29,7 @@ const LOG_PREFIX = '[Diagnostic]';
  * @param binary The binary name to check
  * @returns Object with availability status and optional version string
  */
-function checkBinaryAvailability(binary: string): { available: boolean; version?: string } {
+export function checkBinaryAvailability(binary: string): { available: boolean; version?: string } {
   // First check if the binary exists at all
   try {
     execSync(`which ${binary}`, { stdio: 'ignore' });
@@ -82,7 +82,7 @@ function checkBinaryAvailability(binary: string): { available: boolean; version?
 /**
  * Get information about the Xcode installation
  */
-function getXcodeInfo():
+export function getXcodeInfo():
   | { version: string; path: string; selectedXcode: string; xcrunVersion: string }
   | { error: string } {
   try {
@@ -106,7 +106,7 @@ function getXcodeInfo():
 /**
  * Get information about the environment variables
  */
-function getEnvironmentVariables(): Record<string, string | undefined> {
+export function getEnvironmentVariables(): Record<string, string | undefined> {
   const relevantVars = [
     'XCODEBUILDMCP_DEBUG',
     'XCODEMAKE_ENABLED',

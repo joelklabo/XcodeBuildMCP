@@ -7,6 +7,11 @@
 
 import * as Sentry from '@sentry/node';
 import { version } from '../version.js';
+import {
+  getXcodeInfo,
+  getEnvironmentVariables,
+  checkBinaryAvailability,
+} from '../tools/diagnostic.js';
 
 Sentry.init({
   dsn: 'https://798607831167c7b9fe2f2912f5d3c665@o4509258288332800.ingest.de.sentry.io/4509258293837904',
@@ -27,8 +32,29 @@ Sentry.init({
 });
 
 // Add additional context that might be helpful for debugging
-Sentry.setTags({
+const tags: Record<string, string> = {
   nodeVersion: process.version,
   platform: process.platform,
   arch: process.arch,
-});
+};
+
+// Only add Xcode Info if it's available
+const xcodeInfo = getXcodeInfo();
+if ('version' in xcodeInfo) {
+  tags.xcodeVersion = xcodeInfo.version;
+  tags.xcrunVersion = xcodeInfo.xcrunVersion;
+} else {
+  tags.xcodeVersion = 'Unknown';
+  tags.xcrunVersion = 'Unknown';
+}
+
+const envVars = getEnvironmentVariables();
+tags.env_XCODEBUILDMCP_DEBUG = envVars.XCODEBUILDMCP_DEBUG || 'false';
+tags.env_XCODEMAKE_ENABLED = envVars.XCODEMAKE_ENABLED || 'false';
+tags.env_XCODEBUILDMCP_RUNNING_UNDER_MISE = envVars.XCODEBUILDMCP_RUNNING_UNDER_MISE || 'false';
+
+const miseAvailable = checkBinaryAvailability('mise');
+tags.miseAvailable = miseAvailable.available ? 'true' : 'false';
+tags.miseVersion = miseAvailable.version || 'Unknown';
+
+Sentry.setTags(tags);

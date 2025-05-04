@@ -128,7 +128,10 @@ async function _findProjectsRecursive(
     if (code === 'EPERM' || code === 'EACCES') {
       log('debug', `Permission denied scanning directory: ${currentDirAbs}`);
     } else {
-      log('warn', `Error scanning directory ${currentDirAbs}: ${message} (Code: ${code ?? 'N/A'})`);
+      log(
+        'warning',
+        `Error scanning directory ${currentDirAbs}: ${message} (Code: ${code ?? 'N/A'})`,
+      );
     }
   }
 }

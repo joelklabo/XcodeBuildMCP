@@ -74,7 +74,7 @@ async function executeIdbCommand(
         log('debug', `${LOG_PREFIX}: Command "${commandName}" exited with code ${code}`);
         log('debug', `${LOG_PREFIX}: stdout:\n${stdoutData}`);
         if (stderrData) {
-          log('warn', `${LOG_PREFIX}: stderr:\n${stderrData}`);
+          log('warning', `${LOG_PREFIX}: stderr:\n${stderrData}`);
         }
 
         if (processError) {
@@ -594,7 +594,7 @@ export function registerIdbTools(server: McpServer): void {
 
           // Clean up the temporary file
           await fs.unlink(screenshotPath).catch((err) => {
-            log('warn', `${LOG_PREFIX}/${toolName}: Failed to delete temporary file: ${err}`);
+            log('warning', `${LOG_PREFIX}/${toolName}: Failed to delete temporary file: ${err}`);
           });
 
           // Return the image directly in the tool response
