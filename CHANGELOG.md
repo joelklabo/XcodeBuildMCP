@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.3.4] - 2025-05-04
+- Improved Sentry integration
+
 ## [v1.3.3] - 2025-05-04
 - Added Sentry opt-out functionality
 
