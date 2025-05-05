@@ -9,7 +9,7 @@
  * - Recursively scanning directories for Xcode projects and workspaces
  * - Filtering out common directories that should be skipped (build, DerivedData, etc.)
  * - Respecting maximum depth limits to prevent excessive scanning
- * - Providing formatted output with relative paths for discovered files
+ * - Providing formatted output with absolute paths for discovered files
  */
 
 import { z } from 'zod';
@@ -84,12 +84,12 @@ async function _findProjectsRecursive(
         let isXcodeBundle = false;
 
         if (entry.name.endsWith('.xcodeproj')) {
-          results.projects.push(relativePath);
-          log('debug', `Found project: ${relativePath}`);
+          results.projects.push(absoluteEntryPath); // Use absolute path
+          log('debug', `Found project: ${absoluteEntryPath}`);
           isXcodeBundle = true;
         } else if (entry.name.endsWith('.xcworkspace')) {
-          results.workspaces.push(relativePath);
-          log('debug', `Found workspace: ${relativePath}`);
+          results.workspaces.push(absoluteEntryPath); // Use absolute path
+          log('debug', `Found workspace: ${absoluteEntryPath}`);
           isXcodeBundle = true;
         }
 
@@ -224,7 +224,7 @@ async function _handleDiscoveryLogic(params: DiscoverProjectsParams): Promise<To
   if (results.projects.length > 0) {
     responseContent.push(
       createTextContent(
-        `Projects (relative to workspace root):\n - ${results.projects.join('\n - ')}`,
+        `Projects found:\n - ${results.projects.join('\n - ')}`,
       ),
     );
   }
@@ -232,7 +232,7 @@ async function _handleDiscoveryLogic(params: DiscoverProjectsParams): Promise<To
   if (results.workspaces.length > 0) {
     responseContent.push(
       createTextContent(
-        `Workspaces (relative to workspace root):\n - ${results.workspaces.join('\n - ')}`,
+        `Workspaces found:\n - ${results.workspaces.join('\n - ')}`,
       ),
     );
   }
