@@ -163,7 +163,7 @@ export function setupIdb(): void {
       } else {
         log(
           'warning',
-          `${LOG_PREFIX} fb-idb Python package could not be installed. UI automation features will not be available.`,
+          `${LOG_PREFIX} fb-idb Python package could not be installed. UI automation features will not be available. Try running 'pip install fb-idb==1.1.7' manually.`,
         );
       }
     } else {
@@ -188,7 +188,7 @@ export function setupIdb(): void {
 
 export function createIdbNotAvailableResponse(): ToolResponse {
   return createTextResponse(
-    'idb command not found. UI automation features will not be available.\n\n' +
+    'idb command not found. UI automation features will not be available. Try running `pip install fb-idb==1.1.7` manually.\n\n' +
       'See section "Enabling UI Automation" in the README.',
     true,
   );

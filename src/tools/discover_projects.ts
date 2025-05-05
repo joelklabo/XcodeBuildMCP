@@ -223,17 +223,13 @@ async function _handleDiscoveryLogic(params: DiscoverProjectsParams): Promise<To
 
   if (results.projects.length > 0) {
     responseContent.push(
-      createTextContent(
-        `Projects found:\n - ${results.projects.join('\n - ')}`,
-      ),
+      createTextContent(`Projects found:\n - ${results.projects.join('\n - ')}`),
     );
   }
 
   if (results.workspaces.length > 0) {
     responseContent.push(
-      createTextContent(
-        `Workspaces found:\n - ${results.workspaces.join('\n - ')}`,
-      ),
+      createTextContent(`Workspaces found:\n - ${results.workspaces.join('\n - ')}`),
     );
   }
 
