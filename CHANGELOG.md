@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.3.5] - 2025-05-05
+- Fixed the text input UI automation tool
+- Improve the UI automation tool hints to reduce agent tool call errors
+- Improved the project discovery tool to reduce agent tool call errors
+- Added instructions for installing idb client manually
+
 ## [v1.3.4] - 2025-05-04
 - Improved Sentry integration
 
