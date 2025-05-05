@@ -9,13 +9,16 @@ import SwiftUI
 import OSLog
 
 struct ContentView: View {
-    @State private var text = "Hello, world!"
+    @State private var text = ""
 
     var body: some View {
         VStack {
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
+            TextField("Enter text", text: $text)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
             Text(text)
 
             Button("Log something") {

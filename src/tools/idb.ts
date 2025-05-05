@@ -29,7 +29,7 @@ async function executeIdbCommand(
 ): Promise<string> {
   let fullArgs: string[] = [];
 
-  const uiCommands = ['describe-all', 'describe-point', 'tap', 'swipe', 'key', 'press'];
+  const uiCommands = ['describe-all', 'describe-point', 'tap', 'swipe', 'key', 'press', 'text'];
 
   if (uiCommands.includes(commandName)) {
     fullArgs = ['ui', commandName, '--udid', simulatorUuid];
@@ -267,7 +267,7 @@ export function registerIdbTools(server: McpServer): void {
   // 3. tap
   server.tool(
     'tap',
-    'Simulates a tap event at the specified (x, y) coordinates in the simulator.',
+    'Simulates a tap event at the specified (x, y) coordinates in the simulator. Make sure to tap the center of the element you want to tap.',
     {
       simulatorUuid: z.string().uuid('Invalid Simulator UUID format'),
       x: z.number().int('X coordinate must be an integer'),
@@ -453,7 +453,7 @@ export function registerIdbTools(server: McpServer): void {
   // 6. type_text
   server.tool(
     'type_text',
-    'Simulates typing the specified text into the simulator.',
+    'Simulates typing the specified text into the simulator. Make sure to tap the center of the text field first to focus it.',
     {
       simulatorUuid: z.string().uuid('Invalid Simulator UUID format'),
       text: z.string().min(1, 'Text cannot be empty'),
