@@ -18,6 +18,7 @@ A Model Context Protocol (MCP) server that provides Xcode-related tools for inte
    * [One-line setup with mise](#one-line-setup-with-mise)
    * [Configure MCP clients](#configure-mcp-clients)
    * [Enabling UI Automation (beta)](#enabling-ui-automation-beta)
+- [Incremental build support](#incremental-build-support)    
 - [Troubleshooting](#troubleshooting)
    * [Diagnostic Tool](#diagnostic-tool)
       + [Using with mise](#using-with-mise)
@@ -135,6 +136,11 @@ pip install fb-idb==1.1.7
 
 > [!NOTE]
 > Displaying images in tool responses and embedding them in chat context may not be supported by all MCP Clients; it's currently known to be supported in Cursor.
+
+## Incremental build support
+
+XcodeBuildMCP now includes experimental incremental build support in version 1.4.0-beta, dramatically reducing build times after the first full compile. This can significantly speed up your development workflow. Get started here:
+https://github.com/cameroncooke/XcodeBuildMCP/tree/1.4.0-beta?tab=readme-ov-file#incremental-build-support
 
 ## Troubleshooting
 
