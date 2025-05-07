@@ -14,6 +14,9 @@ npm version "$VERSION" --no-git-tag-version
 
 echo "📝 Updating version in README.md..."
 sed -i '' "s/@[0-9]*\.[0-9]*\.[0-9]*/@$VERSION/g" README.md
+echo ""
+echo "📝 Updating version in TOOL_OPTIONS.md..."
+sed -i '' "s/@[0-9]*\.[0-9]*\.[0-9]*/@$VERSION/g" TOOL_OPTIONS.md
 
 echo "🛠 Running build..."
 npm run build
@@ -25,6 +28,9 @@ git tag "v$VERSION"
 
 echo "🚀 Pushing to origin..."
 git push origin main --tags
+
+echo "📦 Creating GitHub release..."
+gh release create "v$VERSION" --generate-notes -t "Release v$VERSION"
 
 echo "📤 Publishing to npm..."
 npm publish

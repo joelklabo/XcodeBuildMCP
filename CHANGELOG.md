@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.3.6] - 2025-05-07
+- Added support for enabling/disabling tools via environment variables
+
 ## [v1.3.5] - 2025-05-05
 - Fixed the text input UI automation tool
 - Improve the UI automation tool hints to reduce agent tool call errors
