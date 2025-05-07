@@ -81,9 +81,9 @@ xcuserdata/
 .cache
 .parcel-cache
 
-# Windsurf rules
+# Windsurf
 .windsurfrules
-
+/.windsurf
 
 # Sentry Config File
 .sentryclirc
