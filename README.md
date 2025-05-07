@@ -128,7 +128,7 @@ brew install idb-companion
 The idb client is also required but XcodeBuildMCP attmepts to install it for you. If you find that the UI automation features are still not available you can install the client manually using the following command (assumes you have Python installed):
 
 ```bash
-pip install fb-idb==1.1.7
+pipx install fb-idb==1.1.7
 ```
 
 > [!IMPORTANT]
