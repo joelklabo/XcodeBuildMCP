@@ -103,7 +103,7 @@ Configure your MCP client (Windsurf, Cursor, Claude Desktop, etc.) to use the Xc
       "command": "mise",
       "args": [
         "x",
-        "npm:xcodebuildmcp@1.3.6",
+        "npm:xcodebuildmcp@1.3.7",
         "--",
         "xcodebuildmcp"
       ]
@@ -156,14 +156,14 @@ The diagnostic tool is a standalone utility that checks your system configuratio
 
 ```bash
 # Run the diagnostic tool using mise
-mise x npm:xcodebuildmcp@1.3.6 -- xcodebuildmcp-diagnostic
+mise x npm:xcodebuildmcp@1.3.7 -- xcodebuildmcp-diagnostic
 ```
 
 #### Using with npx
 
 ```bash
 # Run the diagnostic tool using npx
-npx xcodebuildmcp@1.3.6 xcodebuildmcp-diagnostic
+npx xcodebuildmcp@1.3.7 xcodebuildmcp-diagnostic
 ```
 
 The diagnostic tool will output comprehensive information about:
@@ -206,7 +206,7 @@ Example MCP client configuration:
       "command": "mise",
       "args": [
         "x",
-        "npm:xcodebuildmcp@1.3.6",
+        "npm:xcodebuildmcp@1.3.7",
         "--",
         "xcodebuildmcp"
       ],
@@ -231,7 +231,7 @@ Once you have enabled one or more tools or groups of tools all other tools will 
       "command": "mise",
       "args": [
         "x",
-        "npm:xcodebuildmcp@1.3.6",
+        "npm:xcodebuildmcp@1.3.7",
         "--",
         "xcodebuildmcp"
       ],
