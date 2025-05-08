@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.3.7] - 2025-05-08
+- Fix Claude Code issue due to long tool names
+
 ## [v1.3.6] - 2025-05-07
 - Added support for enabling/disabling tools via environment variables
 
